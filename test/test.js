@@ -66,6 +66,8 @@ beforeEach(function(){
       }
     }
   });
+
+  hungarian.phraseStructure("S","VERB");
 });
 
 describe('Language', function() {
@@ -98,7 +100,7 @@ describe('Words', function(){
 
   describe('should be able to tell you', function(){
     it('has certain letters', function(){
-      word2.has(word2.o.vowels.front.rounded).should.equal(true);
+      word2.has(word2.o.vowels.front.unrounded).should.equal(true);
     })
   });
 });
@@ -122,4 +124,12 @@ describe('Conjugations', function(){
 
     it('if ik verb, should return the correct conjugation');
   })
-})
+});
+
+describe('Phrase Structure rules', function(){
+  describe('on creation', function(){
+    it('should store rules correctly', function(){
+      hungarian.rules['S'] = ["VERB"];
+    });
+  });
+});

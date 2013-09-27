@@ -7,6 +7,7 @@ class Language
 	orthographies: {}
 	words: {}
 	inflections: {}
+	rules: {} # Phrase structure rules
 
 	word: (word, pos) -> 
 		@words[word] = new Word(word, pos, @orthographies[@defaultOrthography])
@@ -23,6 +24,12 @@ class Language
 			@inflections[word.type].inflect(word, form)
 		else
 			console.log("There are no inflections of the type "+word.type)
+
+	phraseStructure: (fromThis, toThis) ->
+		if @rules[fromThis]
+			@rules[fromThis].push(toThis)
+		else
+			@rules[fromThis] = [toThis]
 
 class Orthography
 	constructor: (@id,orthography) -> 
@@ -47,7 +54,7 @@ class Word
 		re = new RegExp(letters.split('').join('|'),"gi")
 		match = @lemma.match(re)
 		if match? then matchCount = match.length else matchCount = 0
-		if returnBoolean then !matchCount else matchCount
+		if returnBoolean then !!matchCount else matchCount
 
 
 	getVowelType: ->		
@@ -79,7 +86,7 @@ class Inflection
 	mergeSuff: (stem, suffix) ->
 		stem + suffix.substr(1)
 
-	mergeAff: (affix, stem) ->
+	mergeAff: (stem, affix) ->
 		affix.substr(affix.length-1) + stem
 
 	parseException: (inflection) ->
@@ -102,7 +109,20 @@ class Inflection
 			return ending
 
 	inflect: (word, form) ->
-		@mergeSuff(word.lemma,@[form](word))
+		inflection = @[form](word)
+		if inflection.substr(0,1) is '+'
+			@mergeSuff(word.lemma,inflection)
+		else
+			@mergeAff(word.lemma,inflection)
+
+class PhraseStructure
+	constructor: (@fromThis, @toThis) ->
+		if rules[fromThis]
+			rules[fromThis].push(toThis)
+		else
+			rules[fromThis] = [toThis]
+
+	rules: []
 
 if typeof module isnt 'undefined' and module.exports?
     exports.Language = Language
