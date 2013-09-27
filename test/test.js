@@ -5,10 +5,6 @@ var should = require('chai').should(),
     Inflection = require('../src/hungarian.js').Inflection;
 
 beforeEach(function(){
-  var FRONT_UR = 0;
-      FRONT_R = 1;
-      BACK = 2;
-
   hungarian = new Language("hungarian");
 
   hw = hungarian.words;
@@ -29,7 +25,11 @@ beforeEach(function(){
   hungarian.word("tanít", "VERB");
   word2 = hungarian.words.tanít;
 
+  hungarian.word("hazudik","VERB");
+  word3 = hungarian.words.hazudik;
+
   hungarian.inflection({
+    "schema": ["front.unrounded","front.rounded","back"],
     "name": "VERB",
     "1sg": {
       "form": "+Vk",
@@ -80,6 +80,7 @@ describe('Words', function(){
   describe('on creation', function(){
     it('should have a lemma', function(){
       word1.lemma.should.equal('ért');
+      word3.lemma.should.equal('hazud');
     });
 
     it('should have a type', function(){
@@ -91,20 +92,32 @@ describe('Words', function(){
     });
 
     it('should have a vowel category', function(){
-      word1.vowel.should.equal(0);
+      word1.vowel.should.equal('front.unrounded');
     });
+  });
+
+  describe('should be able to tell you', function(){
+    it('has certain letters', function(){
+      word2.has(word2.o.vowels.front.rounded).should.equal(true);
+    })
   });
 });
 
 describe('Conjugations', function(){
   describe('for each verb,', function(){
     it('if base, should return the correct conjugation', function(){
-      hungarian.conjugate(word1,"1sg").should.equal('értek');
-      hungarian.conjugate(word1,"2sg").should.equal('értesz');
-      hungarian.conjugate(word1,"3sg").should.equal('ért');
-      hungarian.conjugate(word1,"1pl").should.equal('értünk');
-      hungarian.conjugate(word1,"2pl").should.equal('értetek');
-      hungarian.conjugate(word1,"3pl").should.equal('értenek');
+      hungarian.inflect(word1,"1sg").should.equal('értek');
+      hungarian.inflect(word1,"2sg").should.equal('értesz');
+      hungarian.inflect(word1,"3sg").should.equal('ért');
+      hungarian.inflect(word1,"1pl").should.equal('értünk');
+      hungarian.inflect(word1,"2pl").should.equal('értetek');
+      hungarian.inflect(word1,"3pl").should.equal('értenek');
+      hungarian.inflect(word2,"1sg").should.equal('tanítok');
+      hungarian.inflect(word2,"2sg").should.equal('tanítasz');
+      hungarian.inflect(word2,"3sg").should.equal('tanít');
+      hungarian.inflect(word2,"1pl").should.equal('tanítunk');
+      hungarian.inflect(word2,"2pl").should.equal('tanítotok');
+      hungarian.inflect(word2,"3pl").should.equal('tanítanak');
     });
 
     it('if ik verb, should return the correct conjugation');

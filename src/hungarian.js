@@ -65,62 +65,49 @@ Word = (function() {
     this.vowel = this.getVowelType(this.lemma);
   }
 
-  Word.prototype.FRONT_UR = 0;
+  Word.prototype.count = function(letters) {
+    return this.match(letters, false);
+  };
 
-  Word.prototype.FRONT_R = 1;
+  Word.prototype.has = function(letters) {
+    return this.match(letters, true);
+  };
 
-  Word.prototype.BACK = 2;
+  Word.prototype.match = function(letters, returnBoolean) {
+    var match, matchCount, re;
+    re = new RegExp(letters.split('').join('|'), "gi");
+    match = this.lemma.match(re);
+    if (match != null) {
+      matchCount = match.length;
+    } else {
+      matchCount = 0;
+    }
+    if (returnBoolean) {
+      return !matchCount;
+    } else {
+      return matchCount;
+    }
+  };
 
   Word.prototype.getVowelType = function() {
-    var back, frontR, frontUR, _countBackVowels, _countFrontRounded, _countFrontUnrounded,
-      _this = this;
-    _countBackVowels = function() {
-      var match, re;
-      re = new RegExp(_this.o.vowels.back.split('').join('|'), "gi");
-      match = _this.lemma.match(re);
-      if (match != null) {
-        return match.length;
-      } else {
-        return 0;
-      }
-    };
-    _countFrontRounded = function() {
-      var match, re;
-      re = new RegExp(_this.o.vowels.front.rounded.split('').join('|'), "gi");
-      match = _this.lemma.match(re);
-      if (match != null) {
-        return match.length;
-      } else {
-        return 0;
-      }
-    };
-    _countFrontUnrounded = function() {
-      var match, re;
-      re = new RegExp(_this.o.vowels.front.unrounded.split('').join('|'), "gi");
-      match = _this.lemma.match(re);
-      if (match != null) {
-        return match.length;
-      } else {
-        return 0;
-      }
-    };
-    back = _countBackVowels();
-    frontR = _countFrontRounded();
-    frontUR = _countFrontUnrounded();
+    var back, frontR, frontUR;
+    back = this.count(this.o.vowels.back);
+    frontR = this.count(this.o.vowels.front.rounded);
+    frontUR = this.count(this.o.vowels.front.unrounded);
     switch (Math.max(back, Math.max(frontR, frontUR))) {
       case back:
-        return this.BACK;
+        return "back";
       case frontR:
-        return this.FRONT_R;
+        return "front.rounded";
       case frontUR:
-        return this.FRONT_UR;
+        return "front.unrounded";
     }
   };
 
   Word.prototype.toLemma = function(word) {
     if (word.substr(-2) === "ik") {
       return {
-        "lemma": word.substr(0, this.lemma.length - 2),
+        "lemma": word.substr(0, word.length - 2),
         "type": this.pos + "+ik"
       };
     } else {
@@ -158,22 +145,22 @@ Inflection = (function() {
     var key, value;
     for (key in inflection) {
       value = inflection[key];
-      if (key === "name") {
+      if (key === "name" || key === "schema") {
         this[key] = value;
       } else {
-        this[key] = this.substitutor(value.form, value.replacements);
+        this[key] = this.substitutor(value.form, value.replacements, inflection.schema);
       }
     }
   };
 
-  Inflection.prototype.substitutor = function(form, replacements) {
+  Inflection.prototype.substitutor = function(form, replacements, schema) {
     return function(word) {
       var ending, key, letters, re;
       ending = form;
       for (key in replacements) {
         letters = replacements[key];
         re = new RegExp(key, "gi");
-        ending = ending.replace(re, letters[word.vowel]);
+        ending = ending.replace(re, letters[schema.indexOf(word.vowel)]);
       }
       return ending;
     };
@@ -214,6 +201,7 @@ hungarian.word("tanít", "VERB");
 
 hungarian.inflection({
   "name": "VERB",
+  "schema": ["front.unrounded", "front.rounded", "back"],
   "1sg": {
     "form": "+Vk",
     "replacements": {

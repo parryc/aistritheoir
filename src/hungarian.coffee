@@ -37,40 +37,32 @@ class Word
 		@o = orthography
 		@vowel = @getVowelType(@lemma)
 
-	FRONT_UR: 0
-	FRONT_R: 1
-	BACK: 2
+	count: (letters) ->
+		@match(letters, false)
+
+	has: (letters) ->
+		@match(letters, true)
+
+	match: (letters, returnBoolean) ->
+		re = new RegExp(letters.split('').join('|'),"gi")
+		match = @lemma.match(re)
+		if match? then matchCount = match.length else matchCount = 0
+		if returnBoolean then !matchCount else matchCount
 
 
-
-	getVowelType: ->
-		_countBackVowels = =>
-			re = new RegExp(@o.vowels.back.split('').join('|'),"gi")
-			match = @lemma.match(re)
-			if match? then match.length else 0
-
-		_countFrontRounded = =>
-			re = new RegExp(@o.vowels.front.rounded.split('').join('|'),"gi")
-			match = @lemma.match(re)
-			if match? then match.length else 0
-
-		_countFrontUnrounded = =>
-			re = new RegExp(@o.vowels.front.unrounded.split('').join('|'),"gi")
-			match = @lemma.match(re)
-			if match? then match.length else 0
-		
-		back = _countBackVowels()
-		frontR = _countFrontRounded()
-		frontUR = _countFrontUnrounded()
+	getVowelType: ->		
+		back = @count(@o.vowels.back)
+		frontR = @count(@o.vowels.front.rounded)
+		frontUR = @count(@o.vowels.front.unrounded)
 		switch Math.max(back,Math.max(frontR,frontUR))
-			when back then @BACK
-			when frontR then @FRONT_R
-			when frontUR then @FRONT_UR
+			when back then "back"
+			when frontR then "front.rounded"
+			when frontUR then "front.unrounded"
 
 	toLemma: (word) ->
 		if word.substr(-2) is "ik" 
 			{
-				"lemma": word.substr(0,@lemma.length-2) 
+				"lemma": word.substr(0,word.length-2) 
 				"type": @pos+"+ik"
 			}
 		else 
@@ -95,18 +87,18 @@ class Inflection
 
 	parseInflection: (inflection) ->
 		for key, value of inflection
-			if key is "name"
+			if key is "name" or key is "schema"
 				@[key] = value
 			else
-				@[key] = @substitutor(value.form, value.replacements)
+				@[key] = @substitutor(value.form, value.replacements, inflection.schema)
 		return
 			
-	substitutor: (form, replacements) ->
+	substitutor: (form, replacements, schema) ->
 		(word) -> 
 			ending = form
 			for key, letters of replacements
 				re = new RegExp(key,"gi")
-				ending = ending.replace(re,letters[word.vowel])
+				ending = ending.replace(re,letters[schema.indexOf(word.vowel)])
 			return ending
 
 	inflect: (word, form) ->
@@ -130,12 +122,12 @@ hungarian.orthography({
 			"unrounded": "eéií"
 		}
 	}
-
-	})
+})
 hungarian.word("ért","VERB")
 hungarian.word("tanít","VERB")
 hungarian.inflection({
 	"name":"VERB"
+	"schema": ["front.unrounded","front.rounded","back"]
 	"1sg":{
 			"form":"+Vk"
 			"replacements":{"V":["e","ö","o"]}
