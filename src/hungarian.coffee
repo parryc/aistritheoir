@@ -20,8 +20,8 @@ class Language
 		@inflections[inflection.name] = new Inflection(inflection, false)
 
 	inflect: (word, form) ->
-		if @inflections[word.type]
-			@inflections[word.type].inflect(word, form)
+		if @inflections[word.pos]
+			@inflections[word.pos].inflect(word, form)
 		else
 			console.log("There are no inflections of the type "+word.type)
 
@@ -36,21 +36,25 @@ class Orthography
 		for key, letters of orthography
 			@[key] = letters
 
+	get: (path) ->
+		split = path.split('.')
+		temp = @
+		for part in split
+			temp = temp[part]
+		return temp
+
 class Word
-	constructor: (word, @pos, orthography) ->
-		lemmaInfo = @toLemma(word)
-		@lemma = lemmaInfo.lemma
-		@type = lemmaInfo.type
+	constructor: (@lemma, @pos, orthography) ->
 		@o = orthography
 		@vowel = @getVowelType(@lemma)
 
 	count: (letters) ->
-		@match(letters, false)
+		@_match(letters, false)
 
 	has: (letters) ->
-		@match(letters, true)
+		@_match(letters, true)
 
-	match: (letters, returnBoolean) ->
+	_match: (letters, returnBoolean) ->
 		re = new RegExp(letters.split('').join('|'),"gi")
 		match = @lemma.match(re)
 		if match? then matchCount = match.length else matchCount = 0
@@ -65,18 +69,6 @@ class Word
 			when back then "back"
 			when frontR then "front.rounded"
 			when frontUR then "front.unrounded"
-
-	toLemma: (word) ->
-		if word.substr(-2) is "ik" 
-			{
-				"lemma": word.substr(0,word.length-2) 
-				"type": @pos+"+ik"
-			}
-		else 
-			{
-				"lemma": word
-				"type": @pos 
-			} 
 
 class Inflection
 	constructor: (inflection, isException) ->
@@ -97,7 +89,13 @@ class Inflection
 			if key is "name" or key is "schema"
 				@[key] = value
 			else
-				@[key] = @substitutor(value.form, value.replacements, inflection.schema)
+				@[key] = {}
+				if value.default
+					for condition, value of inflection[key]
+						parsedCondition = @_parseCondition(condition)
+						@[key][parsedCondition] = @substitutor(value.form, value.replacements, inflection.schema)
+				else
+					@[key]["default"] = @substitutor(value.form, value.replacements, inflection.schema)
 		return
 			
 	substitutor: (form, replacements, schema) ->
@@ -109,11 +107,34 @@ class Inflection
 			return ending
 
 	inflect: (word, form) ->
-		inflection = @[form](word)
+		inflector = "default"
+		root = word.lemma
+		for condition of @[form]
+			if @_isDeleter(condition)
+				re = new RegExp(condition.substr(1),"gi")
+			else
+				re = new RegExp(condition,"gi")
+			match = word.lemma.match(re)
+			if match? then inflector = condition
+
+		if @_isDeleter(inflector)
+			trimOff = inflector.substr(1,inflector.indexOf('$')-1)
+			root = word.lemma.substr(0,word.lemma.indexOf(trimOff))
+
+		inflection = @[form][inflector](word)
 		if inflection.substr(0,1) is '+'
-			@mergeSuff(word.lemma,inflection)
+			@mergeSuff(root,inflection)
 		else
-			@mergeAff(word.lemma,inflection)
+			@mergeAff(root,inflection)
+
+	_parseCondition: (condition) ->
+		# end of word
+		if @_isDeleter(condition)
+			return condition + '$'
+		return condition 
+
+	_isDeleter: (condition) ->
+		return condition.substr(0,1) is '-'
 
 class PhraseStructure
 	constructor: (@fromThis, @toThis) ->
@@ -149,9 +170,15 @@ hungarian.inflection({
 	"name":"VERB"
 	"schema": ["front.unrounded","front.rounded","back"]
 	"1sg":{
+		"default": {
 			"form":"+Vk"
 			"replacements":{"V":["e","ö","o"]}
 		}
+		"-ik": {
+			"form":"+Vm"
+			"replacements":{"V":["e","ö","o"]}
+		}
+	}
 	"2sg":{
 		"form":"+Vsz"
 		"replacements":{"V":["e","e","a"]}

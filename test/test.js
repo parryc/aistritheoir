@@ -25,22 +25,30 @@ beforeEach(function(){
   hungarian.word("tanít", "VERB");
   word2 = hungarian.words.tanít;
 
-  hungarian.word("hazudik","VERB");
-  word3 = hungarian.words.hazudik;
+  hungarian.word("játszik","VERB");
+  word3 = hungarian.words.játszik;
 
   hungarian.inflection({
-    "schema": ["front.unrounded","front.rounded","back"],
+    "schema": ["back","front.unrounded","front.rounded"],
     "name": "VERB",
     "1sg": {
-      "form": "+Vk",
-      "replacements": {
-        "V": ["e", "ö", "o"]
+      "default": {
+        "form": "+Vk",
+        "replacements": {
+          "V": ["o", "e", "ö"]
+        }
+      },
+      "-ik": {
+        "form": "+Vm",
+        "replacements": {
+          "V": ["o", "e", "ö"]
+        }
       }
     },
     "2sg": {
       "form": "+Vsz",
       "replacements": {
-        "V": ["e", "e", "a"]
+        "V": ["a", "e", "e"]
       }
     },
     "3sg": {
@@ -50,19 +58,19 @@ beforeEach(function(){
     "1pl": {
       "form": "+Vnk",
       "replacements": {
-        "V": ["ü", "ü", "u"]
+        "V": ["u", "ü", "ü"]
       }
     },
     "2pl": {
       "form": "+VtVk",
       "replacements": {
-        "V": ["e", "ö", "o"]
+        "V": ["o", "e", "ö"]
       }
     },
     "3pl": {
       "form": "+VnVk",
       "replacements": {
-        "V": ["e", "e", "a"]
+        "V": ["a", "e", "e"]
       }
     }
   });
@@ -82,11 +90,6 @@ describe('Words', function(){
   describe('on creation', function(){
     it('should have a lemma', function(){
       word1.lemma.should.equal('ért');
-      word3.lemma.should.equal('hazud');
-    });
-
-    it('should have a type', function(){
-      word1.type.should.equal('VERB');
     });
 
     it('should have a pos', function(){
@@ -122,7 +125,10 @@ describe('Conjugations', function(){
       hungarian.inflect(word2,"3pl").should.equal('tanítanak');
     });
 
-    it('if ik verb, should return the correct conjugation');
+    it('if ik verb, should return the correct conjugation', function(){
+      hungarian.inflect(word3,"1sg").should.equal('játszom');
+      hungarian.inflect(word3,"3sg").should.equal('játszik');
+    });
   })
 });
 

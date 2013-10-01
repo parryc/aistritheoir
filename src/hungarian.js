@@ -31,8 +31,8 @@ Language = (function() {
   };
 
   Language.prototype.inflect = function(word, form) {
-    if (this.inflections[word.type]) {
-      return this.inflections[word.type].inflect(word, form);
+    if (this.inflections[word.pos]) {
+      return this.inflections[word.pos].inflect(word, form);
     } else {
       return console.log("There are no inflections of the type " + word.type);
     }
@@ -60,30 +60,38 @@ Orthography = (function() {
     }
   }
 
+  Orthography.prototype.get = function(path) {
+    var part, split, temp, _i, _len;
+    split = path.split('.');
+    temp = this;
+    for (_i = 0, _len = split.length; _i < _len; _i++) {
+      part = split[_i];
+      temp = temp[part];
+    }
+    return temp;
+  };
+
   return Orthography;
 
 })();
 
 Word = (function() {
-  function Word(word, pos, orthography) {
-    var lemmaInfo;
+  function Word(lemma, pos, orthography) {
+    this.lemma = lemma;
     this.pos = pos;
-    lemmaInfo = this.toLemma(word);
-    this.lemma = lemmaInfo.lemma;
-    this.type = lemmaInfo.type;
     this.o = orthography;
     this.vowel = this.getVowelType(this.lemma);
   }
 
   Word.prototype.count = function(letters) {
-    return this.match(letters, false);
+    return this._match(letters, false);
   };
 
   Word.prototype.has = function(letters) {
-    return this.match(letters, true);
+    return this._match(letters, true);
   };
 
-  Word.prototype.match = function(letters, returnBoolean) {
+  Word.prototype._match = function(letters, returnBoolean) {
     var match, matchCount, re;
     re = new RegExp(letters.split('').join('|'), "gi");
     match = this.lemma.match(re);
@@ -114,20 +122,6 @@ Word = (function() {
     }
   };
 
-  Word.prototype.toLemma = function(word) {
-    if (word.substr(-2) === "ik") {
-      return {
-        "lemma": word.substr(0, word.length - 2),
-        "type": this.pos + "+ik"
-      };
-    } else {
-      return {
-        "lemma": word,
-        "type": this.pos
-      };
-    }
-  };
-
   return Word;
 
 })();
@@ -152,13 +146,23 @@ Inflection = (function() {
   Inflection.prototype.parseException = function(inflection) {};
 
   Inflection.prototype.parseInflection = function(inflection) {
-    var key, value;
+    var condition, key, parsedCondition, value, _ref;
     for (key in inflection) {
       value = inflection[key];
       if (key === "name" || key === "schema") {
         this[key] = value;
       } else {
-        this[key] = this.substitutor(value.form, value.replacements, inflection.schema);
+        this[key] = {};
+        if (value["default"]) {
+          _ref = inflection[key];
+          for (condition in _ref) {
+            value = _ref[condition];
+            parsedCondition = this._parseCondition(condition);
+            this[key][parsedCondition] = this.substitutor(value.form, value.replacements, inflection.schema);
+          }
+        } else {
+          this[key]["default"] = this.substitutor(value.form, value.replacements, inflection.schema);
+        }
       }
     }
   };
@@ -177,13 +181,41 @@ Inflection = (function() {
   };
 
   Inflection.prototype.inflect = function(word, form) {
-    var inflection;
-    inflection = this[form](word);
-    if (inflection.substr(0, 1) === '+') {
-      return this.mergeSuff(word.lemma, inflection);
-    } else {
-      return this.mergeAff(word.lemma, inflection);
+    var condition, inflection, inflector, match, re, root, trimOff;
+    inflector = "default";
+    root = word.lemma;
+    for (condition in this[form]) {
+      if (this._isDeleter(condition)) {
+        re = new RegExp(condition.substr(1), "gi");
+      } else {
+        re = new RegExp(condition, "gi");
+      }
+      match = word.lemma.match(re);
+      if (match != null) {
+        inflector = condition;
+      }
     }
+    if (this._isDeleter(inflector)) {
+      trimOff = inflector.substr(1, inflector.indexOf('$') - 1);
+      root = word.lemma.substr(0, word.lemma.indexOf(trimOff));
+    }
+    inflection = this[form][inflector](word);
+    if (inflection.substr(0, 1) === '+') {
+      return this.mergeSuff(root, inflection);
+    } else {
+      return this.mergeAff(root, inflection);
+    }
+  };
+
+  Inflection.prototype._parseCondition = function(condition) {
+    if (this._isDeleter(condition)) {
+      return condition + '$';
+    }
+    return condition;
+  };
+
+  Inflection.prototype._isDeleter = function(condition) {
+    return condition.substr(0, 1) === '-';
   };
 
   return Inflection;
@@ -236,9 +268,17 @@ hungarian.inflection({
   "name": "VERB",
   "schema": ["front.unrounded", "front.rounded", "back"],
   "1sg": {
-    "form": "+Vk",
-    "replacements": {
-      "V": ["e", "ö", "o"]
+    "default": {
+      "form": "+Vk",
+      "replacements": {
+        "V": ["e", "ö", "o"]
+      }
+    },
+    "-ik": {
+      "form": "+Vm",
+      "replacements": {
+        "V": ["e", "ö", "o"]
+      }
     }
   },
   "2sg": {
