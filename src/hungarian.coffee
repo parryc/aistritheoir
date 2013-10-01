@@ -113,7 +113,15 @@ class Inflection
 			if @_isDeleter(condition)
 				re = new RegExp(condition.substr(1),"gi")
 			else
-				re = new RegExp(condition,"gi")
+				# Replace groups with correct orthography
+				groups = condition.match(/'([^']*)'/gi)
+				if groups?
+					expandedCondition = condition
+					for group in groups
+						letters = word.o.get(group.replace(/'/gi,""))
+						groupRegexp = "["+letters.split('').join('|')+"]"
+						expandedCondition = expandedCondition.replace(group,groupRegexp)
+				re = new RegExp(expandedCondition,"gi")
 			match = word.lemma.match(re)
 			if match? then inflector = condition
 
@@ -131,6 +139,27 @@ class Inflection
 		# end of word
 		if @_isDeleter(condition)
 			return condition + '$'
+
+		if condition.indexOf("after") isnt -1
+			parts = condition.split("after")
+			begin = "("
+			end = ")$"
+			for part in parts
+				ors = part.split("or")
+				for cond in ors
+					cond = cond.replace("+","")
+					# GROUP xN => GROUP {N}
+					m = cond.match(/x(\d)/i)
+					if m? 
+						cond = cond.replace(m[0],"{"+m[1]+"}")
+						cond = cond.replace(/\s/gi,"")
+					begin += cond
+					if cond
+						begin += "|"
+			# remove last |
+			begin = begin.substr(0,begin.length-1)
+			return (begin + end).replace(/\s/gi,"")
+
 		return condition 
 
 	_isDeleter: (condition) ->
@@ -150,53 +179,3 @@ if typeof module isnt 'undefined' and module.exports?
     exports.Orthography = Orthography
     exports.Word = Word
     exports.Inflection = Inflection
-
-
-
-hungarian = new Language("hungarian")
-hw = hungarian.words
-hungarian.orthography({
-	"vowels": {
-		"back": "aáoóuú"
-		"front": {
-			"rounded": "öőüű"
-			"unrounded": "eéií"
-		}
-	}
-})
-hungarian.word("ért","VERB")
-hungarian.word("tanít","VERB")
-hungarian.inflection({
-	"name":"VERB"
-	"schema": ["front.unrounded","front.rounded","back"]
-	"1sg":{
-		"default": {
-			"form":"+Vk"
-			"replacements":{"V":["e","ö","o"]}
-		}
-		"-ik": {
-			"form":"+Vm"
-			"replacements":{"V":["e","ö","o"]}
-		}
-	}
-	"2sg":{
-		"form":"+Vsz"
-		"replacements":{"V":["e","e","a"]}
-	}
-	"3sg":{
-			"form":"+"
-			"replacements":{}
-		}
-	"1pl":{
-			"form":"+Vnk"
-			"replacements":{"V":["ü","ü","u"]}
-		}
-	"2pl":{
-			"form":"+VtVk"
-			"replacements":{"V":["e","ö","o"]}
-		}		
-	"3pl":{
-		"form":"+VnVk"
-		"replacements":{"V":["e","e","a"]}
-	}
-})

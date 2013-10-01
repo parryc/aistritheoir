@@ -15,8 +15,10 @@ beforeEach(function(){
       "front": {
         "rounded": "öőüű",
         "unrounded": "eéií"
-      }
-    }
+      },
+      "long": "áóúőűéí"
+    },
+    "consonants" : "rt"
   });
 
   hungarian.word("ért", "VERB");
@@ -27,6 +29,9 @@ beforeEach(function(){
 
   hungarian.word("játszik","VERB");
   word3 = hungarian.words.játszik;
+
+  hungarian.word("fordít","VERB");
+  word4 = hungarian.words.fordít;
 
   hungarian.inflection({
     "schema": ["back","front.unrounded","front.rounded"],
@@ -46,9 +51,13 @@ beforeEach(function(){
       }
     },
     "2sg": {
-      "form": "+Vsz",
-      "replacements": {
-        "V": ["a", "e", "e"]
+      "default": {
+        "form":"+sz",
+        "replacements":{"V":["a","e","e"]}
+      },
+      "after 'consonants' x2 or 'vowels.long' + t": {
+        "form":"+Vsz",
+        "replacements":{"V":["a","e","e"]}
       }
     },
     "3sg": {
@@ -109,14 +118,13 @@ describe('Words', function(){
 });
 
 describe('Conjugations', function(){
-  describe('for each verb,', function(){
+  describe('for each verb in the present tense,', function(){
     it('if base, should return the correct conjugation', function(){
       hungarian.inflect(word1,"1sg").should.equal('értek');
-      hungarian.inflect(word1,"2sg").should.equal('értesz');
       hungarian.inflect(word1,"3sg").should.equal('ért');
       hungarian.inflect(word1,"1pl").should.equal('értünk');
-      hungarian.inflect(word1,"2pl").should.equal('értetek');
-      hungarian.inflect(word1,"3pl").should.equal('értenek');
+
+
       hungarian.inflect(word2,"1sg").should.equal('tanítok');
       hungarian.inflect(word2,"2sg").should.equal('tanítasz');
       hungarian.inflect(word2,"3sg").should.equal('tanít');
@@ -129,6 +137,20 @@ describe('Conjugations', function(){
       hungarian.inflect(word3,"1sg").should.equal('játszom');
       hungarian.inflect(word3,"3sg").should.equal('játszik');
     });
+
+    it('if after two consonants should return the correct conjugation', function(){
+      hungarian.inflect(word1,"2sg").should.equal('értesz');
+      hungarian.inflect(word1,"2pl").should.equal('értetek');
+      hungarian.inflect(word1,"3pl").should.equal('értenek');
+    })
+
+    it('if after a long vowel + t, should return the correct conjugation', function(){
+      hungarian.inflect(word4,"2sg").should.equal("fordítasz");
+      hungarian.inflect(word4,"2pl").should.equal("fordítotok");
+      hungarian.inflect(word4,"3pl").should.equal("fordítanak");
+    })
+
+    it('if after a sibilant, should return the correct conjugation')
   })
 });
 
