@@ -52,8 +52,9 @@ Language = (function() {
 
 Orthography = (function() {
   function Orthography(id, orthography) {
-    var key, letters;
+    var key, letterSet, letters;
     this.id = id;
+    letterSet = [];
     for (key in orthography) {
       letters = orthography[key];
       this[key] = letters;
@@ -69,6 +70,21 @@ Orthography = (function() {
       temp = temp[part];
     }
     return temp;
+  };
+
+  Orthography.prototype.getRegExp = function(path) {
+    var g, letterSet, letters, ngraphs, _i, _len;
+    letterSet = [];
+    letters = this.get(path);
+    ngraphs = letters.match(/\(([^\()])*\)/gi);
+    if (ngraphs != null) {
+      for (_i = 0, _len = ngraphs.length; _i < _len; _i++) {
+        g = ngraphs[_i];
+        letterSet.push(g.substr(1, g.length - 2));
+        letters = letters.replace(g, "");
+      }
+    }
+    return letterSet.concat(letters.split('')).join('|');
   };
 
   return Orthography;
@@ -93,7 +109,7 @@ Word = (function() {
 
   Word.prototype._match = function(letters, returnBoolean) {
     var match, matchCount, re;
-    re = new RegExp(letters.split('').join('|'), "gi");
+    re = new RegExp(this.o.getRegExp(letters), "gi");
     match = this.lemma.match(re);
     if (match != null) {
       matchCount = match.length;
@@ -109,9 +125,9 @@ Word = (function() {
 
   Word.prototype.getVowelType = function() {
     var back, frontR, frontUR;
-    back = this.count(this.o.vowels.back);
-    frontR = this.count(this.o.vowels.front.rounded);
-    frontUR = this.count(this.o.vowels.front.unrounded);
+    back = this.count("vowels.back");
+    frontR = this.count("vowels.front.rounded");
+    frontUR = this.count("vowels.front.unrounded");
     switch (Math.max(back, Math.max(frontR, frontUR))) {
       case back:
         return "back";

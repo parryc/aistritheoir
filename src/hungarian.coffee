@@ -33,6 +33,7 @@ class Language
 
 class Orthography
 	constructor: (@id,orthography) -> 
+		letterSet = []
 		for key, letters of orthography
 			@[key] = letters
 
@@ -42,6 +43,18 @@ class Orthography
 		for part in split
 			temp = temp[part]
 		return temp
+
+	getRegExp: (path) ->
+		letterSet = []
+		letters = @get(path)
+		ngraphs = letters.match(/\(([^\()])*\)/gi)
+		if ngraphs?
+			for g in ngraphs
+				# Remove parens
+				letterSet.push(g.substr(1,g.length-2))
+				letters = letters.replace(g,"")
+		return letterSet.concat(letters.split('')).join('|')
+
 
 class Word
 	constructor: (@lemma, @pos, orthography) ->
@@ -55,16 +68,16 @@ class Word
 		@_match(letters, true)
 
 	_match: (letters, returnBoolean) ->
-		re = new RegExp(letters.split('').join('|'),"gi")
+		re = new RegExp(@o.getRegExp(letters),"gi")
 		match = @lemma.match(re)
 		if match? then matchCount = match.length else matchCount = 0
 		if returnBoolean then !!matchCount else matchCount
 
 
 	getVowelType: ->		
-		back = @count(@o.vowels.back)
-		frontR = @count(@o.vowels.front.rounded)
-		frontUR = @count(@o.vowels.front.unrounded)
+		back = @count("vowels.back")
+		frontR = @count("vowels.front.rounded")
+		frontUR = @count("vowels.front.unrounded")
 		switch Math.max(back,Math.max(frontR,frontUR))
 			when back then "back"
 			when frontR then "front.rounded"

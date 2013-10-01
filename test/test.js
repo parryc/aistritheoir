@@ -18,7 +18,8 @@ beforeEach(function(){
       },
       "long": "áóúőűéí"
     },
-    "consonants" : "rt"
+    "consonants" : "bc(cs)d(dz)(dzs)fg(gy)hjkl(ly)mn(ny)prs(sz)t(ty)vz(zs)",
+    "sibilants": "s(sz)z(dz)"
   });
 
   hungarian.word("ért", "VERB");
@@ -58,6 +59,10 @@ beforeEach(function(){
       "after 'consonants' x2 or 'vowels.long' + t": {
         "form":"+Vsz",
         "replacements":{"V":["a","e","e"]}
+      },
+      "after 'sibilants'": {
+        "form":"+Vl",
+        "replacements":{"V":["o","e","ö"]}
       }
     },
     "3sg": {
@@ -71,15 +76,23 @@ beforeEach(function(){
       }
     },
     "2pl": {
-      "form": "+VtVk",
-      "replacements": {
-        "V": ["o", "e", "ö"]
+      "default":{
+        "form": "+tVk",
+        "replacements": {"V": ["o", "e", "ö"]}
+      },
+      "after 'consonants' x2 or 'vowels.long' + t": {
+        "form": "+VtVk",
+        "replacements": {"V": ["o", "e", "ö"]}
       }
     },
     "3pl": {
-      "form": "+VnVk",
-      "replacements": {
-        "V": ["a", "e", "e"]
+      "default": {
+        "form": "+nVk",
+        "replacements": {"V": ["a", "e", "e"]}
+      },
+      "after 'consonants' x2 or 'vowels.long' + t": {
+        "form": "+VnVk",
+        "replacements": {"V": ["a", "e", "e"]}
       }
     }
   });
@@ -112,7 +125,7 @@ describe('Words', function(){
 
   describe('should be able to tell you', function(){
     it('has certain letters', function(){
-      word2.has(word2.o.vowels.front.unrounded).should.equal(true);
+      word2.has("vowels.front.unrounded").should.equal(true);
     })
   });
 });
@@ -150,7 +163,10 @@ describe('Conjugations', function(){
       hungarian.inflect(word4,"3pl").should.equal("fordítanak");
     })
 
-    it('if after a sibilant, should return the correct conjugation')
+    it('if after a sibilant, should return the correct conjugation', function(){
+      hungarian.word('főz','VERB')
+      hungarian.inflect(hungarian.words.főz,'2sg').should.equal("főzöl")
+    })
   })
 });
 

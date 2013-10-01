@@ -12,62 +12,109 @@ As I mentioned above, it's currently oriented towards Hungarian, but the goal is
 * Inflections: probably just enough to frustrate
 
 ## How to use it ##
+This set up is taken directly from the tests. 
 
 Create a language object - this stores all of the information you generate
 ````
-hungarian = new Language("hungarian")
-hw = hungarian.words
+hungarian = new Language("hungarian");
 ````
 
-Define an orthography - this is accessible by the word.  In this case, I define the different vowel distinctions used for Hungarian vowel harmony
+Define an orthography - this is accessible by the word.  Surround n-graphs (digraphs etc.) with parentheses. 
 ````
-hungarian.orthography({
-	"vowels": {
-		"back": "aáoóuú"
-		"front": {
-			"rounded": "öőüű"
-			"unrounded": "eéií"
-		}
-	}
-})
+ hungarian.orthography({
+    "vowels": {
+      "back": "aáoóuú",
+      "front": {
+        "rounded": "öőüű",
+        "unrounded": "eéií"
+      },
+      "long": "áóúőűéí"
+    },
+    "consonants" : "bc(cs)d(dz)(dzs)fg(gy)hjkl(ly)mn(ny)prs(sz)t(ty)vz(zs)",
+    "sibilants": "s(sz)z(dz)"
+  });
+
 ````
 
-Create some words.  The "VERB" is the POS.  The inflection scheme is defined automatically based on the definition in the Word class and (shouldn't?) isn't specified by the user. 
+Create some words - make sure to use the dictionary form [(also known as the lemma)](http://en.wikipedia.org/wiki/Lemma_(morphology)).  The "VERB" is the POS.  The inflection scheme is chosen automatically based on the part of speech and matching rules defined in the . 
 ````
 hungarian.word("ért","VERB")
 hungarian.word("tanít","VERB")
 ````
 
-The most interesting bit is creating inflection rules.  It takes a grammatical descriptor (e.g. "1sg" or "DAT") and the morphological form ("+Vk").  The morphological form is described by what replacements need to be done: in this case "V" is replaced by the vowel harmony type (index to the array) and the '+' means it's a suffix. 
+The most interesting bit is creating inflection rules.  It takes a grammatical descriptor (e.g. "1sg" or "DAT") and the morphological form ("+Vk").  The morphological form is described by what replacements need to be done: in this case "V" is replaced by the vowel harmony type (index to the array) and the '+' means it's a suffix. You'll notice that there are some more verbose conditions. These are described with a (at the moment) reduced grammar: 
+
+* ```after``` means that what follows must appear at the end of the word
+* orthographic lists are accessed with their path in quotes, e.g. ```'vowels.back'``` will match any ```aáoóuú```
+* use ```or``` to have multiple conditions
+* strings of words are denoted with an ```xN```, where N is the number of times it should be repeated
+* ```+``` is basic concatenation
+
+For example, ```after 'consonants' x2 or 'vowels.long' + t``` expands to ```/([b|c|...|zs]{2}|[á|ó|...|í]t)$/```
 
 ````
 hungarian.inflection({
-	"name":"VERB"
-	"1sg":{
-			"form":"+Vk"
-			"replacements":{"V":["e","ö","o"]}
-		}
-	"2sg":{
-		"form":"+Vsz"
-		"replacements":{"V":["e","e","a"]}
-	}
-	"3sg":{
-			"form":"+"
-			"replacements":{}
-		}
-	"1pl":{
-			"form":"+Vnk"
-			"replacements":{"V":["ü","ü","u"]}
-		}
-	"2pl":{
-			"form":"+VtVk"
-			"replacements":{"V":["e","ö","o"]}
-		}		
-	"3pl":{
-		"form":"+VnVk"
-		"replacements":{"V":["e","e","a"]}
-	}
-})
+    "schema": ["back","front.unrounded","front.rounded"],
+    "name": "VERB",
+    "1sg": {
+      "default": {
+        "form": "+Vk",
+        "replacements": {
+          "V": ["o", "e", "ö"]
+        }
+      },
+      "-ik": {
+        "form": "+Vm",
+        "replacements": {
+          "V": ["o", "e", "ö"]
+        }
+      }
+    },
+    "2sg": {
+      "default": {
+        "form":"+sz",
+        "replacements":{"V":["a","e","e"]}
+      },
+      "after 'consonants' x2 or 'vowels.long' + t": {
+        "form":"+Vsz",
+        "replacements":{"V":["a","e","e"]}
+      },
+      "after 'sibilants'": {
+        "form":"+Vl",
+        "replacements":{"V":["o","e","ö"]}
+      }
+    },
+    "3sg": {
+      "form": "+",
+      "replacements": {}
+    },
+    "1pl": {
+      "form": "+Vnk",
+      "replacements": {
+        "V": ["u", "ü", "ü"]
+      }
+    },
+    "2pl": {
+      "default":{
+        "form": "+tVk",
+        "replacements": {"V": ["o", "e", "ö"]}
+      },
+      "after 'consonants' x2 or 'vowels.long' + t": {
+        "form": "+VtVk",
+        "replacements": {"V": ["o", "e", "ö"]}
+      }
+    },
+    "3pl": {
+      "default": {
+        "form": "+nVk",
+        "replacements": {"V": ["a", "e", "e"]}
+      },
+      "after 'consonants' x2 or 'vowels.long' + t": {
+        "form": "+VnVk",
+        "replacements": {"V": ["a", "e", "e"]}
+      }
+    }
+  });
 ````
 
 ## Testing ##
