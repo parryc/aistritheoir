@@ -103,6 +103,8 @@ class Inflection
 				@[key] = value
 			else
 				@[key] = {}
+
+				# If there are conditional rules
 				if value.default
 					for condition, value of inflection[key]
 						parsedCondition = @_parseCondition(condition)
@@ -148,32 +150,34 @@ class Inflection
 		else
 			@mergeAff(root,inflection)
 
+	# Parse the condition rules
 	_parseCondition: (condition) ->
 		# end of word
 		if @_isDeleter(condition)
 			return condition + '$'
 
-		if condition.indexOf("after") isnt -1
-			parts = condition.split("after")
-			begin = "("
-			end = ")$"
-			for part in parts
-				ors = part.split("or")
-				for cond in ors
-					cond = cond.replace("+","")
-					# GROUP xN => GROUP {N}
-					m = cond.match(/x(\d)/i)
-					if m? 
-						cond = cond.replace(m[0],"{"+m[1]+"}")
-						cond = cond.replace(/\s/gi,"")
-					begin += cond
-					if cond
-						begin += "|"
-			# remove last |
-			begin = begin.substr(0,begin.length-1)
-			return (begin + end).replace(/\s/gi,"")
+		# Parse all the language features!
 
-		return condition 
+		# after X => (X)$
+		condition = condition.replace(/after(.*)/gi,"($1)$")
+
+		# exceptions[...] => ^(...|...)$
+		exceptions = condition.match(/exceptions\[(.*)\]/i)
+		if exceptions? 
+			condition = condition.replace(exceptions[0],"^("+exceptions[1].replace(/\s/gi,"|")+")$")
+
+		# + => (blank)
+		condition = condition.replace(/\+/gi,"")
+
+		#  xN => {N}
+		condition = condition.replace(/x(\d)/gi,"{$1}")
+
+		# or => |
+		condition = condition.replace(/or/gi,"|")
+
+		# return removed spaces version
+		return condition.replace(/\s/gi,"")
+
 
 	_isDeleter: (condition) ->
 		return condition.substr(0,1) is '-'

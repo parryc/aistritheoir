@@ -234,35 +234,19 @@ Inflection = (function() {
   };
 
   Inflection.prototype._parseCondition = function(condition) {
-    var begin, cond, end, m, ors, part, parts, _i, _j, _len, _len1;
+    var exceptions;
     if (this._isDeleter(condition)) {
       return condition + '$';
     }
-    if (condition.indexOf("after") !== -1) {
-      parts = condition.split("after");
-      begin = "(";
-      end = ")$";
-      for (_i = 0, _len = parts.length; _i < _len; _i++) {
-        part = parts[_i];
-        ors = part.split("or");
-        for (_j = 0, _len1 = ors.length; _j < _len1; _j++) {
-          cond = ors[_j];
-          cond = cond.replace("+", "");
-          m = cond.match(/x(\d)/i);
-          if (m != null) {
-            cond = cond.replace(m[0], "{" + m[1] + "}");
-            cond = cond.replace(/\s/gi, "");
-          }
-          begin += cond;
-          if (cond) {
-            begin += "|";
-          }
-        }
-      }
-      begin = begin.substr(0, begin.length - 1);
-      return (begin + end).replace(/\s/gi, "");
+    condition = condition.replace(/after(.*)/gi, "($1)$");
+    exceptions = condition.match(/exceptions\[(.*)\]/i);
+    if (exceptions != null) {
+      condition = condition.replace(exceptions[0], "^(" + exceptions[1].replace(/\s/gi, "|") + ")$");
     }
-    return condition;
+    condition = condition.replace(/\+/gi, "");
+    condition = condition.replace(/x(\d)/gi, "{$1}");
+    condition = condition.replace(/or/gi, "|");
+    return condition.replace(/\s/gi, "");
   };
 
   Inflection.prototype._isDeleter = function(condition) {
