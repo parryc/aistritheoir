@@ -7,6 +7,7 @@ class Language
 	orthographies: {}
 	words: {}
 	inflections: {}
+	markers: {}
 	rules: {} # Phrase structure rules
 
 	word: (word, pos) -> 
@@ -24,6 +25,9 @@ class Language
 			@inflections[word.pos].inflect(word, form)
 		else
 			console.log("There are no inflections of the type "+word.type)
+
+	marker: (marker) ->
+		@markers[marker.name] = new Marker(marker)
 
 	phraseStructure: (fromThis, toThis) ->
 		if @rules[fromThis]
@@ -128,15 +132,7 @@ class Inflection
 			if @_isDeleter(condition)
 				re = new RegExp(condition.substr(1),"gi")
 			else
-				# Replace groups with correct orthography
-				groups = condition.match(/'([^']*)'/gi)
-				if groups?
-					expandedCondition = condition
-					for group in groups
-						letters = word.o.get(group.replace(/'/gi,""))
-						groupRegexp = "["+letters.split('').join('|')+"]"
-						expandedCondition = expandedCondition.replace(group,groupRegexp)
-				re = new RegExp(expandedCondition,"gi")
+				re = @_expandCondition(word, condition)
 			match = word.lemma.match(re)
 			if match? then inflector = condition
 
@@ -145,10 +141,28 @@ class Inflection
 			root = word.lemma.substr(0,word.lemma.indexOf(trimOff))
 
 		inflection = @[form][inflector](word)
+		return @_combine(root, inflection)
+
+
+	# combine the root and the inflection
+	_combine: (root, inflection) ->
 		if inflection.substr(0,1) is '+'
 			@mergeSuff(root,inflection)
 		else
 			@mergeAff(root,inflection)
+
+
+	# Returns a regular expression object
+	_expandCondition: (word, condition) ->
+		# Replace groups with correct orthography
+		groups = condition.match(/'([^']*)'/gi)
+		if groups?
+			expandedCondition = condition
+			for group in groups
+				letters = word.o.get(group.replace(/'/gi,""))
+				groupRegexp = "["+letters.split('').join('|')+"]"
+				expandedCondition = expandedCondition.replace(group,groupRegexp)
+		re = new RegExp(expandedCondition,"gi")
 
 	# Parse the condition rules
 	_parseCondition: (condition) ->
@@ -181,6 +195,46 @@ class Inflection
 
 	_isDeleter: (condition) ->
 		return condition.substr(0,1) is '-'
+
+	_findValidSchema: (lemma, schema) ->
+		# 
+
+class Marker extends Inflection
+	constructor: (marker) ->
+		for key, value of marker
+			if key is "name" or key is "schema"
+				@[key] = value
+			else
+				console.log(value)
+				parsedCondition = @_parseCondition(key)
+				@.conditions[parsedCondition] = {}
+				@.conditions[parsedCondition].marker = @substitutor(value.form, value.replacements, marker.schema)
+				@.conditions[parsedCondition].exceptions =  value.exceptions
+		return
+
+	conditions: {}
+
+	getException: (word) ->
+		for condition, data of @conditions
+			if word in data.exceptions
+				return condition
+		return ''
+
+	mark: (word) ->
+		rule = "default"
+		root = word.lemma
+		for condition, data of @conditions
+			re = @_expandCondition(word, condition)
+			match = root.match(re)
+			if match? 
+				rule = condition
+				potentialException = @getException(root)
+				if potentialException isnt ""
+					rule = potentialException
+
+		mark = @conditions[rule].marker(word)
+		return @_combine(root, mark)
+
 
 class PhraseStructure
 	constructor: (@fromThis, @toThis) ->

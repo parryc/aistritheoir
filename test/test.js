@@ -97,6 +97,27 @@ beforeEach(function(){
     }
   });
 
+
+  hungarian.inflection({
+    "schema": ["back","front"],
+    "name": "VERB-PST",
+    "markers": "PST",
+    "1sg": {
+      "form": "+Vk",
+      "replacements": {"V": ["a","e"]}
+    }
+  })
+
+  hungarian.marker({
+    "schema": ["back", "front"],
+    "name": "PST",
+    "after 'consonants' x2": {
+      "exceptions": ["hi","bye"],
+      "form": "+Vtt",
+      "replacements": {"V": ["o","ö"]}
+    }
+  })
+
   hungarian.phraseStructure("S","VERB");
 });
 
@@ -167,6 +188,12 @@ describe('Conjugations', function(){
       hungarian.word('főz','VERB')
       hungarian.inflect(hungarian.words.főz,'2sg').should.equal("főzöl")
     })
+  })
+
+  describe('for each verb in the past tense,', function(){
+    it('if class A, should return the correct conjugation')
+    it('if class B, should return the correct conjugation')
+    it('if class C, should return the correct conjugation')
   })
 });
 
