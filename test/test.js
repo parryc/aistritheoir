@@ -19,7 +19,8 @@ beforeEach(function(){
       "long": "áóúőűéí"
     },
     "consonants" : "bc(cs)d(dz)(dzs)fg(gy)hjkl(ly)mn(ny)prs(sz)t(ty)vz(zs)",
-    "sibilants": "s(sz)z(dz)"
+    "sibilants": "s(sz)z(dz)",
+    "palatals": "jl(ly)n(ny)r"
   });
 
   hungarian.word("ért", "VERB");
@@ -101,20 +102,55 @@ beforeEach(function(){
   hungarian.inflection({
     "schema": ["back","front"],
     "name": "VERB-PST",
-    "markers": "PST",
+    "markers": ["PST"],
     "1sg": {
+      "form": "+Vm",
+      "replacements": {"V": ["a","e"]}
+    },
+   "2sg": {
+      "form": "+Vl",
+      "replacements": {"V": ["ú","é"]}
+    },
+    "3sg": {
+      "form": "+",
+      "replacements": {}
+    },
+    "1pl": {
+      "form": "+Vnk",
+      "replacements": {"V": ["u","ü"]}
+    },
+    "2pl": {
+      "form": "+AtBk",
+      "replacements": {"A": ["a","e"], "B": ["o","e"]}
+    },
+    "3pl": {
       "form": "+Vk",
       "replacements": {"V": ["a","e"]}
     }
   })
 
   hungarian.marker({
-    "schema": ["back", "front"],
+    "schema": ["back", "front.unrounded", "front.rounded"],
     "name": "PST",
-    "after 'consonants' x2": {
-      "exceptions": ["hi","bye"],
+    "after 'consonants' x2 or 'vowels.long' + t": {
+      "exceptions": ["fut","hat", "jut", "köt", "nyit", "süt", "üt", "vet"],
       "form": "+Vtt",
-      "replacements": {"V": ["o","ö"]}
+      "replacements": {"V": ["o","e","ö"]}
+    },
+    "after 'palatals' or +ad or +ed": {
+      "exceptions": ["áll","száll","varr","forr"],
+      "form": "+t",
+      "replacements":{}
+    },
+    "default": {
+      "exceptions": ["lát", "küld", "mond", "keyd", "függ", "fedd"],
+      "overrides": {"3sg" :{
+          "form": "+Vtt",
+          "replacements": {"V": ["o","e","ö"]}
+        }
+      },
+      "form": "+t",
+      "replacements": {}
     }
   })
 

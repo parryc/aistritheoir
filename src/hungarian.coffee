@@ -20,9 +20,19 @@ class Language
 	inflection: (inflection) ->
 		@inflections[inflection.name] = new Inflection(inflection, false)
 
-	inflect: (word, form) ->
-		if @inflections[word.pos]
-			@inflections[word.pos].inflect(word, form)
+	inflect: (word, form, additional) ->
+		if additional?
+			fullInflection = word.pos + '-' + additional 
+		else 
+			fullInflection = word.pos
+		
+		inflection = @inflections[fullInflection]
+		if inflection
+			markerList = []
+			if inflection.markers?
+				for marker in inflection.markers
+					markerList.push(@markers[marker])
+			inflection.inflect(word, form, markerList)
 		else
 			console.log("There are no inflections of the type "+word.type)
 
@@ -103,7 +113,7 @@ class Inflection
 
 	parseInflection: (inflection) ->
 		for key, value of inflection
-			if key is "name" or key is "schema"
+			if key is "name" or key is "schema" or key is "markers"
 				@[key] = value
 			else
 				@[key] = {}
@@ -118,14 +128,20 @@ class Inflection
 		return
 			
 	substitutor: (form, replacements, schema) ->
-		(word) -> 
+		(word) => 
 			ending = form
+			schemaPosition = schema.indexOf(word.vowel)
+			if schemaPosition is -1
+				schemaPosition = @_findValidSchema(word.vowel, schema)
+				if schemaPosition is -1
+					console.log("The word does not fit in this schema")
+
 			for key, letters of replacements
 				re = new RegExp(key,"gi")
-				ending = ending.replace(re,letters[schema.indexOf(word.vowel)])
+				ending = ending.replace(re,letters[schemaPosition])
 			return ending
 
-	inflect: (word, form) ->
+	inflect: (word, form, markerList) ->
 		inflector = "default"
 		root = word.lemma
 		for condition of @[form]
@@ -139,6 +155,12 @@ class Inflection
 		if @_isDeleter(inflector)
 			trimOff = inflector.substr(1,inflector.indexOf('$')-1)
 			root = word.lemma.substr(0,word.lemma.indexOf(trimOff))
+		
+		marks = ''
+		for marker in markerList
+			marks += marker.mark(word, form)
+
+		root += marks
 
 		inflection = @[form][inflector](word)
 		return @_combine(root, inflection)
@@ -196,8 +218,15 @@ class Inflection
 	_isDeleter: (condition) ->
 		return condition.substr(0,1) is '-'
 
-	_findValidSchema: (lemma, schema) ->
-		# 
+	# word category, for example, would be the vowel type in Hungarian 
+	_findValidSchema: (wordCategory, schema) ->
+		valid = ''
+		while wordCategory isnt ''
+			wordCategory = wordCategory.substr(0,wordCategory.lastIndexOf('.'))
+			idx = schema.indexOf(wordCategory) 
+			if schema.indexOf(wordCategory) isnt -1
+				return idx
+		return valid
 
 class Marker extends Inflection
 	constructor: (marker) ->
@@ -205,11 +234,17 @@ class Marker extends Inflection
 			if key is "name" or key is "schema"
 				@[key] = value
 			else
-				console.log(value)
 				parsedCondition = @_parseCondition(key)
 				@.conditions[parsedCondition] = {}
 				@.conditions[parsedCondition].marker = @substitutor(value.form, value.replacements, marker.schema)
 				@.conditions[parsedCondition].exceptions =  value.exceptions
+
+				overrides = value.overrides
+				if overrides
+					@.conditions[parsedCondition].overrides = {}
+					for key, override of overrides
+						@.conditions[parsedCondition].overrides[key] = @substitutor(override.form, override.replacements, marker.schema)
+
 		return
 
 	conditions: {}
@@ -220,7 +255,7 @@ class Marker extends Inflection
 				return condition
 		return ''
 
-	mark: (word) ->
+	mark: (word, form) ->
 		rule = "default"
 		root = word.lemma
 		for condition, data of @conditions
@@ -231,9 +266,13 @@ class Marker extends Inflection
 				potentialException = @getException(root)
 				if potentialException isnt ""
 					rule = potentialException
-
-		mark = @conditions[rule].marker(word)
-		return @_combine(root, mark)
+		
+		if @conditions[rule].overrides[form]
+			mark = @conditions[rule].overrides[form](word)
+		else
+			mark = @conditions[rule].marker(word)
+		
+		return @_combine('', mark)
 
 
 class PhraseStructure

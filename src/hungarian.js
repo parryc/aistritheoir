@@ -35,9 +35,24 @@ Language = (function() {
     return this.inflections[inflection.name] = new Inflection(inflection, false);
   };
 
-  Language.prototype.inflect = function(word, form) {
-    if (this.inflections[word.pos]) {
-      return this.inflections[word.pos].inflect(word, form);
+  Language.prototype.inflect = function(word, form, additional) {
+    var fullInflection, inflection, marker, markerList, _i, _len, _ref;
+    if (additional != null) {
+      fullInflection = word.pos + '-' + additional;
+    } else {
+      fullInflection = word.pos;
+    }
+    inflection = this.inflections[fullInflection];
+    if (inflection) {
+      markerList = [];
+      if (inflection.markers != null) {
+        _ref = inflection.markers;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          marker = _ref[_i];
+          markerList.push(this.markers[marker]);
+        }
+      }
+      return inflection.inflect(word, form, markerList);
     } else {
       return console.log("There are no inflections of the type " + word.type);
     }
@@ -174,7 +189,7 @@ Inflection = (function() {
     var condition, key, parsedCondition, value, _ref;
     for (key in inflection) {
       value = inflection[key];
-      if (key === "name" || key === "schema") {
+      if (key === "name" || key === "schema" || key === "markers") {
         this[key] = value;
       } else {
         this[key] = {};
@@ -193,20 +208,28 @@ Inflection = (function() {
   };
 
   Inflection.prototype.substitutor = function(form, replacements, schema) {
+    var _this = this;
     return function(word) {
-      var ending, key, letters, re;
+      var ending, key, letters, re, schemaPosition;
       ending = form;
+      schemaPosition = schema.indexOf(word.vowel);
+      if (schemaPosition === -1) {
+        schemaPosition = _this._findValidSchema(word.vowel, schema);
+        if (schemaPosition === -1) {
+          console.log("The word does not fit in this schema");
+        }
+      }
       for (key in replacements) {
         letters = replacements[key];
         re = new RegExp(key, "gi");
-        ending = ending.replace(re, letters[schema.indexOf(word.vowel)]);
+        ending = ending.replace(re, letters[schemaPosition]);
       }
       return ending;
     };
   };
 
-  Inflection.prototype.inflect = function(word, form) {
-    var condition, inflection, inflector, match, re, root, trimOff;
+  Inflection.prototype.inflect = function(word, form, markerList) {
+    var condition, inflection, inflector, marker, marks, match, re, root, trimOff, _i, _len;
     inflector = "default";
     root = word.lemma;
     for (condition in this[form]) {
@@ -224,6 +247,12 @@ Inflection = (function() {
       trimOff = inflector.substr(1, inflector.indexOf('$') - 1);
       root = word.lemma.substr(0, word.lemma.indexOf(trimOff));
     }
+    marks = '';
+    for (_i = 0, _len = markerList.length; _i < _len; _i++) {
+      marker = markerList[_i];
+      marks += marker.mark(word, form);
+    }
+    root += marks;
     inflection = this[form][inflector](word);
     return this._combine(root, inflection);
   };
@@ -271,7 +300,18 @@ Inflection = (function() {
     return condition.substr(0, 1) === '-';
   };
 
-  Inflection.prototype._findValidSchema = function(lemma, schema) {};
+  Inflection.prototype._findValidSchema = function(wordCategory, schema) {
+    var idx, valid;
+    valid = '';
+    while (wordCategory !== '') {
+      wordCategory = wordCategory.substr(0, wordCategory.lastIndexOf('.'));
+      idx = schema.indexOf(wordCategory);
+      if (schema.indexOf(wordCategory) !== -1) {
+        return idx;
+      }
+    }
+    return valid;
+  };
 
   return Inflection;
 
@@ -281,17 +321,24 @@ Marker = (function(_super) {
   __extends(Marker, _super);
 
   function Marker(marker) {
-    var key, parsedCondition, value;
+    var key, override, overrides, parsedCondition, value;
     for (key in marker) {
       value = marker[key];
       if (key === "name" || key === "schema") {
         this[key] = value;
       } else {
-        console.log(value);
         parsedCondition = this._parseCondition(key);
         this.conditions[parsedCondition] = {};
         this.conditions[parsedCondition].marker = this.substitutor(value.form, value.replacements, marker.schema);
         this.conditions[parsedCondition].exceptions = value.exceptions;
+        overrides = value.overrides;
+        if (overrides) {
+          this.conditions[parsedCondition].overrides = {};
+          for (key in overrides) {
+            override = overrides[key];
+            this.conditions[parsedCondition].overrides[key] = this.substitutor(override.form, override.replacements, marker.schema);
+          }
+        }
       }
     }
     return;
@@ -311,7 +358,7 @@ Marker = (function(_super) {
     return '';
   };
 
-  Marker.prototype.mark = function(word) {
+  Marker.prototype.mark = function(word, form) {
     var condition, data, mark, match, potentialException, re, root, rule, _ref;
     rule = "default";
     root = word.lemma;
@@ -328,8 +375,12 @@ Marker = (function(_super) {
         }
       }
     }
-    mark = this.conditions[rule].marker(word);
-    return this._combine(root, mark);
+    if (this.conditions[rule].overrides[form]) {
+      mark = this.conditions[rule].overrides[form](word);
+    } else {
+      mark = this.conditions[rule].marker(word);
+    }
+    return this._combine('', mark);
   };
 
   return Marker;
