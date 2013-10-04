@@ -229,7 +229,7 @@ Inflection = (function() {
   };
 
   Inflection.prototype.inflect = function(word, form, markerList) {
-    var condition, inflection, inflector, marker, marks, match, re, root, trimOff, _i, _len;
+    var condition, inflection, inflector, markData, marker, marks, match, re, root, trimOff, _i, _len;
     inflector = "default";
     root = word.lemma;
     for (condition in this[form]) {
@@ -250,9 +250,13 @@ Inflection = (function() {
     marks = '';
     for (_i = 0, _len = markerList.length; _i < _len; _i++) {
       marker = markerList[_i];
-      marks += marker.mark(word, form);
+      markData = marker.mark(word, form);
+      if (markData.replaceThis === '') {
+        root += markData.withThis;
+      } else {
+        root = root.replace(markData.replaceThis, markData.withThis);
+      }
     }
-    root += marks;
     inflection = this[form][inflector](word);
     return this._combine(root, inflection);
   };
@@ -267,12 +271,12 @@ Inflection = (function() {
 
   Inflection.prototype._expandCondition = function(word, condition) {
     var expandedCondition, group, groupRegexp, groups, re, _i, _len;
+    expandedCondition = condition;
     groups = condition.match(/'([^']*)'/gi);
     if (groups != null) {
-      expandedCondition = condition;
       for (_i = 0, _len = groups.length; _i < _len; _i++) {
         group = groups[_i];
-        groupRegexp = "[" + word.o.getRegExp(group.replace(/'/gi, "")) + "]";
+        groupRegexp = "(" + word.o.getRegExp(group.replace(/'/gi, "")) + ")";
         expandedCondition = expandedCondition.replace(group, groupRegexp);
       }
     }
@@ -291,7 +295,7 @@ Inflection = (function() {
     }
     condition = condition.replace(/\+/gi, "");
     condition = condition.replace(/x(\d)/gi, "{$1}");
-    condition = condition.replace(/or/gi, "|");
+    condition = condition.replace(/\sor\s/gi, "|");
     return condition.replace(/\s/gi, "");
   };
 
@@ -312,6 +316,23 @@ Inflection = (function() {
     return valid;
   };
 
+  Inflection.prototype._assimilate = function(rules, ending) {
+    var rule, _i, _len;
+    rules = rules.split(',');
+    for (_i = 0, _len = rules.length; _i < _len; _i++) {
+      rule = rules[_i];
+      rule = rule.trim();
+      rule.replace(/\+/gi, "");
+      if (rule.indexOf('remove') === 0) {
+        ending = ending.replace(rule.slice("remove".length + 1), "");
+      }
+      if (rule.indexOf('double') === 0) {
+        ending = ending.substr(0, 1) + ending;
+      }
+    }
+    return ending.replace(/\s/gi, "");
+  };
+
   return Inflection;
 
 })();
@@ -321,6 +342,7 @@ Marker = (function(_super) {
 
   function Marker(marker) {
     var key, override, overrides, parsedCondition, value;
+    this.conditions = {};
     for (key in marker) {
       value = marker[key];
       if (key === "name" || key === "schema") {
@@ -338,19 +360,20 @@ Marker = (function(_super) {
             this.conditions[parsedCondition].overrides[key] = this.substitutor(override.form, override.replacements, marker.schema);
           }
         }
+        if (value.assimilation) {
+          this.conditions[parsedCondition].assimilation = value.assimilation;
+        }
       }
     }
     return;
   }
-
-  Marker.prototype.conditions = {};
 
   Marker.prototype.getException = function(word) {
     var condition, data, _ref;
     _ref = this.conditions;
     for (condition in _ref) {
       data = _ref[condition];
-      if (__indexOf.call(data.exceptions, word) >= 0) {
+      if ((data.exceptions != null) && __indexOf.call(data.exceptions, word) >= 0) {
         return condition;
       }
     }
@@ -358,9 +381,11 @@ Marker = (function(_super) {
   };
 
   Marker.prototype.mark = function(word, form) {
-    var condition, data, mark, match, potentialException, re, root, rule, _ref, _ref1;
+    var condition, data, ending, mark, match, potentialException, re, replaceThis, root, rule, withThis, _ref, _ref1;
     rule = "default";
+    replaceThis = "";
     root = word.lemma;
+    ending = '';
     _ref = this.conditions;
     for (condition in _ref) {
       data = _ref[condition];
@@ -369,7 +394,8 @@ Marker = (function(_super) {
       }
       re = this._expandCondition(word, condition);
       match = root.match(re);
-      if (match != null) {
+      if ((match != null) && rule !== "default") {
+        ending = match[0];
         rule = condition;
       }
     }
@@ -382,7 +408,16 @@ Marker = (function(_super) {
     } else {
       mark = this.conditions[rule].marker(word);
     }
-    return this._combine('', mark);
+    withThis = this._combine('', mark);
+    if (this.conditions[rule].assimilation) {
+      replaceThis = ending;
+      console.log(ending);
+      withThis = this._assimilate(this.conditions[rule].assimilation, ending);
+    }
+    return {
+      'replaceThis': replaceThis,
+      'withThis': withThis
+    };
   };
 
   return Marker;

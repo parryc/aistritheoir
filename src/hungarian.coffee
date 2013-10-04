@@ -158,9 +158,14 @@ class Inflection
 		
 		marks = ''
 		for marker in markerList
-			marks += marker.mark(word, form)
+			markData = marker.mark(word, form)
+			if markData.replaceThis is ''
+				root += markData.withThis
+			else
+				root = root.replace(markData.replaceThis, markData.withThis)
+			# marks += marker.mark(word, form)
 
-		root += marks
+		# root += marks
 
 		inflection = @[form][inflector](word)
 		return @_combine(root, inflection)
@@ -177,12 +182,13 @@ class Inflection
 	# Returns a regular expression object
 	_expandCondition: (word, condition) ->
 		# Replace groups with correct orthography
+		expandedCondition = condition
 		groups = condition.match(/'([^']*)'/gi)
 		if groups?
-			expandedCondition = condition
 			for group in groups
-				groupRegexp = "["+word.o.getRegExp(group.replace(/'/gi,""))+"]"
+				groupRegexp = "("+word.o.getRegExp(group.replace(/'/gi,""))+")"
 				expandedCondition = expandedCondition.replace(group,groupRegexp)
+
 		re = new RegExp(expandedCondition,"gi")
 
 	# Parse the condition rules
@@ -208,7 +214,7 @@ class Inflection
 		condition = condition.replace(/x(\d)/gi,"{$1}")
 
 		# or => |
-		condition = condition.replace(/or/gi,"|")
+		condition = condition.replace(/\sor\s/gi,"|")
 
 		# return removed spaces version
 		return condition.replace(/\s/gi,"")
@@ -227,8 +233,20 @@ class Inflection
 				return idx
 		return valid
 
+	_assimilate: (rules, ending) ->
+		rules = rules.split(',')
+		for rule in rules
+			rule = rule.trim()
+			rule.replace(/\+/gi,"")
+			if rule.indexOf('remove') is 0
+				ending = ending.replace(rule.slice("remove".length+1),"")
+			if rule.indexOf('double') is 0
+				ending = ending.substr(0,1)+ending
+		return ending.replace(/\s/gi,"")
+
 class Marker extends Inflection
 	constructor: (marker) ->
+		@.conditions = {}
 		for key, value of marker
 			if key is "name" or key is "schema"
 				@[key] = value
@@ -244,36 +262,46 @@ class Marker extends Inflection
 					for key, override of overrides
 						@.conditions[parsedCondition].overrides[key] = @substitutor(override.form, override.replacements, marker.schema)
 
-		return
+				if value.assimilation then @.conditions[parsedCondition].assimilation = value.assimilation
 
-	conditions: {}
+		return
 
 	getException: (word) ->
 		for condition, data of @conditions
-			if word in data.exceptions
+			if data.exceptions? and word in data.exceptions
 				return condition
 		return ''
 
 	mark: (word, form) ->
 		rule = "default"
+		replaceThis = ""
 		root = word.lemma
+		ending = '' 
 		for condition, data of @conditions when condition isnt "default"
 			re = @_expandCondition(word, condition)
 			match = root.match(re)
-			if match? 
+			# Match only one rule - in case some rules are subsets of other rules
+			if match? and rule isnt "default"
+				ending = match[0]
 				rule = condition
 
 		potentialException = @getException(root)
 		if potentialException isnt ""
 			rule = potentialException
 
-
 		if @conditions[rule].overrides?[form]?
 			mark = @conditions[rule].overrides[form](word)
 		else
 			mark = @conditions[rule].marker(word)
 		
-		return @_combine('', mark)
+		withThis = @_combine('', mark)
+
+		if @conditions[rule].assimilation
+			replaceThis = ending
+			console.log(ending)
+			withThis = @_assimilate(@conditions[rule].assimilation,ending)
+
+		return {'replaceThis': replaceThis, 'withThis': withThis}
 
 
 class PhraseStructure

@@ -117,5 +117,45 @@ hungarian.inflection({
   });
 ````
 
+A more advanced example, using the past tense marker.
+
+Make sure you list the markers you want to use, the order they should be added to the root. In this case, the indefinite past tense requires just the 'PST' marker
+````
+ hungarian.inflection({
+    "schema": ["back","front"],
+    "name": "VERB-PST",
+    "markers": ["PST"],
+    ...
+````
+
+As it stands, the syntax for markers is decently simplified - or at least doesn't require as much typing as a full inflection.  The conditions are written using the same restricted English as described for the inflections (```Marker``` is a subclass of ```Inflection```).  You can also include exceptions, which are words that don't meet the general regex condition, but should still be marked a certain way.  Within conditions, you can also have overrides based on number/person marking ("1sg" etc.). 
+
+````
+  hungarian.marker({
+    "schema": ["back", "front.unrounded", "front.rounded"],
+    "name": "PST",
+    "after 'consonants' x2 or 'vowels.long' + t": {
+      "exceptions": ["fut","hat", "jut", "köt", "nyit", "süt", "üt", "vet"],
+      "form": "+Vtt",
+      "replacements": {"V": ["o","e","ö"]}
+    },
+    "after 'palatals' or +ad or +ed": {
+      "exceptions": ["áll","száll","varr","forr"],
+      "form": "+t",
+      "replacements":{}
+    },
+    "default": {
+      "exceptions": ["lát", "küld", "mond", "keyd", "függ", "fedd"],
+      "overrides": {"3sg" :{
+          "form": "+Vtt",
+          "replacements": {"V": ["o","e","ö"]}
+        }
+      },
+      "form": "+t",
+      "replacements": {}
+    }
+  })
+````
+
 ## Testing ##
 Here there be tests. Mocha and Chai that sholdier boy.

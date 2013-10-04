@@ -16,7 +16,8 @@ beforeEach(function(){
         "rounded": "öőüű",
         "unrounded": "eéií"
       },
-      "long": "áóúőűéí"
+      "long": "áóúőűéí",
+      "short": "aoueiöü"
     },
     "consonants" : "bc(cs)d(dz)(dzs)fg(gy)hjkl(ly)mn(ny)prs(sz)t(ty)vz(zs)",
     "sibilants": "s(sz)z(dz)",
@@ -127,7 +128,37 @@ beforeEach(function(){
       "form": "+Vk",
       "replacements": {"V": ["a","e"]}
     }
-  })
+  });
+
+  hungarian.inflection({
+    "schema": ["back","front.unrounded","front.rounded"],
+    "name": "VERB-SUBJ",
+    "markers": ["SUBJ"],
+    "1sg": {
+      "form": "+Vk",
+      "replacements": {"V": ["a","e","e"]}
+    },
+    "2sg": {
+      "form": "+",
+      "replacements": {}
+    },
+    "3sg": {
+      "form": "+n",
+      "replacements": {"V": ["o","e","ö"]}
+    },
+    "1pl": {
+      "form": "+Vnk",
+      "replacements": {"V": ["u","ü","ü"]}
+    },
+    "2pl": {
+      "form": "+AtBk",
+      "replacements": {"A": ["a","e","e"], "B": ["o","e","e"]}
+    },
+    "3pl": {
+      "form": "+VnVk",
+      "replacements": {"V": ["a","e","e"]}
+    }
+  });
 
   hungarian.marker({
     "schema": ["back", "front.unrounded", "front.rounded"],
@@ -152,7 +183,35 @@ beforeEach(function(){
       "form": "+t",
       "replacements": {}
     }
-  })
+  });
+
+  hungarian.marker({
+    "schema": [],
+    "name": "SUBJ",
+    "'sibilants'": {
+      "assimilation": "double",
+      "form":"+",
+      "replacements":{}
+    },
+    "after (s|sz) + t": {
+      "assimilation": "remove t, double",
+      "form":"+",
+      "replacements":{}
+    },
+    "after 'vowels.long' + t or 'consonants'":{
+      "form":"+s",
+      "replacements":{}
+    },
+    "after 'vowels.short' + t":{
+      "assimilation": "remove t",
+      "form":"+ss",
+      "replacements":{}
+    },
+    "default": {
+      "form":"+j",
+      "replacements":{}
+    }
+  });
 
   hungarian.phraseStructure("S","VERB");
 });
@@ -205,6 +264,7 @@ describe('Conjugations', function(){
 
     it('if ik verb, should return the correct conjugation', function(){
       hungarian.inflect(word3,"1sg").should.equal('játszom');
+      hungarian.inflect(word3,"2sg").should.equal('játszol');
       hungarian.inflect(word3,"3sg").should.equal('játszik');
     });
 
@@ -247,7 +307,26 @@ describe('Conjugations', function(){
     it('should catch overrides of normal paradigm', function(){
       hungarian.inflect(hungarian.words.szeret,'3sg','PST').should.equal('szeretett')
     })
-  })
+  });
+
+  describe('for each indefinite verb in the subjunctive', function(){
+    it('if the ending ends in a sibilant, it should conjugate and assimilate correctly', function(){
+      hungarian.word('keres','VERB');
+      hungarian.inflect(hungarian.words.keres,'1sg','SUBJ').should.equal('keressek');
+    });
+    it('if the ending ends in a s or sz with a t, it should conjugate and assimilate correctly', function(){
+      hungarian.word('ébreszt','VERB');
+      hungarian.inflect(hungarian.words.ébreszt,'1sg','SUBJ').should.equal('ébresszek');
+    });
+    it('if the ending ends in a long vowel or consonant with a t, it should conjugate and assimilate correctly', function(){
+      hungarian.word('segít','VERB');
+      hungarian.inflect(hungarian.words.segít,'1sg','SUBJ').should.equal('segítsek');
+    });
+    it('if the ending ends in a short vowel, it should conjugate and assimilate correctly', function(){
+      hungarian.word('mutat','VERB');
+      hungarian.inflect(hungarian.words.mutat,'1sg','SUBJ').should.equal('mutassak');
+    });
+  });
 });
 
 // describe('for each definite verb in the past tense');
