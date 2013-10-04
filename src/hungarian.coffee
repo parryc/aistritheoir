@@ -181,8 +181,7 @@ class Inflection
 		if groups?
 			expandedCondition = condition
 			for group in groups
-				letters = word.o.get(group.replace(/'/gi,""))
-				groupRegexp = "["+letters.split('').join('|')+"]"
+				groupRegexp = "["+word.o.getRegExp(group.replace(/'/gi,""))+"]"
 				expandedCondition = expandedCondition.replace(group,groupRegexp)
 		re = new RegExp(expandedCondition,"gi")
 
@@ -258,16 +257,18 @@ class Marker extends Inflection
 	mark: (word, form) ->
 		rule = "default"
 		root = word.lemma
-		for condition, data of @conditions
+		for condition, data of @conditions when condition isnt "default"
 			re = @_expandCondition(word, condition)
 			match = root.match(re)
 			if match? 
 				rule = condition
-				potentialException = @getException(root)
-				if potentialException isnt ""
-					rule = potentialException
-		
-		if @conditions[rule].overrides[form]
+
+		potentialException = @getException(root)
+		if potentialException isnt ""
+			rule = potentialException
+
+
+		if @conditions[rule].overrides?[form]?
 			mark = @conditions[rule].overrides[form](word)
 		else
 			mark = @conditions[rule].marker(word)

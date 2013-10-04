@@ -266,14 +266,13 @@ Inflection = (function() {
   };
 
   Inflection.prototype._expandCondition = function(word, condition) {
-    var expandedCondition, group, groupRegexp, groups, letters, re, _i, _len;
+    var expandedCondition, group, groupRegexp, groups, re, _i, _len;
     groups = condition.match(/'([^']*)'/gi);
     if (groups != null) {
       expandedCondition = condition;
       for (_i = 0, _len = groups.length; _i < _len; _i++) {
         group = groups[_i];
-        letters = word.o.get(group.replace(/'/gi, ""));
-        groupRegexp = "[" + letters.split('').join('|') + "]";
+        groupRegexp = "[" + word.o.getRegExp(group.replace(/'/gi, "")) + "]";
         expandedCondition = expandedCondition.replace(group, groupRegexp);
       }
     }
@@ -359,23 +358,26 @@ Marker = (function(_super) {
   };
 
   Marker.prototype.mark = function(word, form) {
-    var condition, data, mark, match, potentialException, re, root, rule, _ref;
+    var condition, data, mark, match, potentialException, re, root, rule, _ref, _ref1;
     rule = "default";
     root = word.lemma;
     _ref = this.conditions;
     for (condition in _ref) {
       data = _ref[condition];
+      if (!(condition !== "default")) {
+        continue;
+      }
       re = this._expandCondition(word, condition);
       match = root.match(re);
       if (match != null) {
         rule = condition;
-        potentialException = this.getException(root);
-        if (potentialException !== "") {
-          rule = potentialException;
-        }
       }
     }
-    if (this.conditions[rule].overrides[form]) {
+    potentialException = this.getException(root);
+    if (potentialException !== "") {
+      rule = potentialException;
+    }
+    if (((_ref1 = this.conditions[rule].overrides) != null ? _ref1[form] : void 0) != null) {
       mark = this.conditions[rule].overrides[form](word);
     } else {
       mark = this.conditions[rule].marker(word);

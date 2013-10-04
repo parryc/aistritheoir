@@ -188,7 +188,7 @@ describe('Words', function(){
 });
 
 describe('Conjugations', function(){
-  describe('for each verb in the present tense,', function(){
+  describe('for each indefinite verb in the present tense,', function(){
     it('if base, should return the correct conjugation', function(){
       hungarian.inflect(word1,"1sg").should.equal('értek');
       hungarian.inflect(word1,"3sg").should.equal('ért');
@@ -224,14 +224,33 @@ describe('Conjugations', function(){
       hungarian.word('főz','VERB')
       hungarian.inflect(hungarian.words.főz,'2sg').should.equal("főzöl")
     })
-  })
+  });
 
-  describe('for each verb in the past tense,', function(){
-    it('if class A, should return the correct conjugation')
-    it('if class B, should return the correct conjugation')
-    it('if class C, should return the correct conjugation')
+  // describe('for each definite verb in the present tense');
+
+  describe('for each indefinite verb in the past tense,', function(){
+    it('if class A, should return the correct conjugation', function(){
+      hungarian.inflect(word2,'1sg','PST').should.equal('tanítottam')
+    });
+    it('if class B, should return the correct conjugation', function(){
+      hungarian.word('marad', 'VERB');
+      hungarian.inflect(hungarian.words.marad,'1sg','PST').should.equal('maradtam');
+    })
+    it('if class C, should return the correct conjugation', function(){
+      hungarian.word('szeret', 'VERB');
+      hungarian.inflect(hungarian.words.szeret,'1sg','PST').should.equal('szerettem');
+    })
+    it('should catch exceptions', function(){
+      hungarian.word('süt', 'VERB');
+      hungarian.inflect(hungarian.words.süt,'1sg','PST').should.equal('sütöttem')
+    })
+    it('should catch overrides of normal paradigm', function(){
+      hungarian.inflect(hungarian.words.szeret,'3sg','PST').should.equal('szeretett')
+    })
   })
 });
+
+// describe('for each definite verb in the past tense');
 
 describe('Phrase Structure rules', function(){
   describe('on creation', function(){
