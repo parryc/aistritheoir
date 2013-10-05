@@ -39,6 +39,7 @@ beforeEach(function(){
   hungarian.inflection({
     "schema": ["back","front.unrounded","front.rounded"],
     "name": "VERB",
+    "preprocess": {"for":"2sg,1pl,2pl,3pl","do":"remove ik"},
     "1sg": {
       "default": {
         "form": "+Vk",
@@ -188,7 +189,7 @@ beforeEach(function(){
   hungarian.marker({
     "schema": [],
     "name": "SUBJ",
-    "'sibilants'": {
+    "after 'sibilants'": {
       "assimilation": "double",
       "form":"+",
       "replacements":{}
@@ -198,7 +199,7 @@ beforeEach(function(){
       "form":"+",
       "replacements":{}
     },
-    "after 'vowels.long' + t or 'consonants'":{
+    "after 'vowels.long' + t or 'consonants' + t":{
       "form":"+s",
       "replacements":{}
     },
@@ -242,7 +243,7 @@ describe('Words', function(){
   describe('should be able to tell you', function(){
     it('has certain letters', function(){
       word2.has("vowels.front.unrounded").should.equal(true);
-    })
+    });
   });
 });
 
@@ -272,41 +273,41 @@ describe('Conjugations', function(){
       hungarian.inflect(word1,"2sg").should.equal('értesz');
       hungarian.inflect(word1,"2pl").should.equal('értetek');
       hungarian.inflect(word1,"3pl").should.equal('értenek');
-    })
+    });
 
     it('if after a long vowel + t, should return the correct conjugation', function(){
       hungarian.inflect(word4,"2sg").should.equal("fordítasz");
       hungarian.inflect(word4,"2pl").should.equal("fordítotok");
       hungarian.inflect(word4,"3pl").should.equal("fordítanak");
-    })
+    });
 
     it('if after a sibilant, should return the correct conjugation', function(){
-      hungarian.word('főz','VERB')
-      hungarian.inflect(hungarian.words.főz,'2sg').should.equal("főzöl")
-    })
+      hungarian.word('főz','VERB');
+      hungarian.inflect(hungarian.words.főz,'2sg').should.equal("főzöl");
+    });
   });
 
   // describe('for each definite verb in the present tense');
 
   describe('for each indefinite verb in the past tense,', function(){
     it('if class A, should return the correct conjugation', function(){
-      hungarian.inflect(word2,'1sg','PST').should.equal('tanítottam')
+      hungarian.inflect(word2,'1sg','PST').should.equal('tanítottam');
     });
     it('if class B, should return the correct conjugation', function(){
       hungarian.word('marad', 'VERB');
       hungarian.inflect(hungarian.words.marad,'1sg','PST').should.equal('maradtam');
-    })
+    });
     it('if class C, should return the correct conjugation', function(){
       hungarian.word('szeret', 'VERB');
       hungarian.inflect(hungarian.words.szeret,'1sg','PST').should.equal('szerettem');
-    })
+    });
     it('should catch exceptions', function(){
       hungarian.word('süt', 'VERB');
-      hungarian.inflect(hungarian.words.süt,'1sg','PST').should.equal('sütöttem')
-    })
+      hungarian.inflect(hungarian.words.süt,'1sg','PST').should.equal('sütöttem');
+    });
     it('should catch overrides of normal paradigm', function(){
-      hungarian.inflect(hungarian.words.szeret,'3sg','PST').should.equal('szeretett')
-    })
+      hungarian.inflect(hungarian.words.szeret,'3sg','PST').should.equal('szeretett');
+    });
   });
 
   describe('for each indefinite verb in the subjunctive', function(){

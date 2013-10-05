@@ -4,15 +4,15 @@ class Language
 		# window[id.substr(0,1)+"w"] = @.words
 
 	defaultOrthography: "latin"
-	orthographies: {}
-	words: {}
-	inflections: {}
-	markers: {}
-	rules: {} # Phrase structure rules
+	orthographies: { }
+	words: { }
+	inflections: { }
+	markers: { }
+	rules: { } # Phrase structure rules
 
 	word: (word, pos) -> 
 		@words[word] = new Word(word, pos, @orthographies[@defaultOrthography])
-
+	
 	orthography: (orthography) ->
 		id = @defaultOrthography
 		@orthographies[id] = new Orthography(id, orthography)
@@ -113,10 +113,10 @@ class Inflection
 
 	parseInflection: (inflection) ->
 		for key, value of inflection
-			if key is "name" or key is "schema" or key is "markers"
+			if key in ["name","schema","markers","preprocess"] 
 				@[key] = value
 			else
-				@[key] = {}
+				@[key] = { }
 
 				# If there are conditional rules
 				if value.default
@@ -134,7 +134,7 @@ class Inflection
 			if schemaPosition is -1
 				schemaPosition = @_findValidSchema(word.vowel, schema)
 				if schemaPosition is -1
-					console.log("The word does not fit in this schema")
+					console.log("The word does not fit in this schema")					
 
 			for key, letters of replacements
 				re = new RegExp(key,"gi")
@@ -144,12 +144,17 @@ class Inflection
 	inflect: (word, form, markerList) ->
 		inflector = "default"
 		root = word.lemma
+
+		if @.preprocess
+			if @.preprocess.for.indexOf(form) isnt -1
+				root = @_assimilate(@.preprocess.do,root)
+
 		for condition of @[form]
 			if @_isDeleter(condition)
 				re = new RegExp(condition.substr(1),"gi")
 			else
 				re = @_expandCondition(word, condition)
-			match = word.lemma.match(re)
+			match = root.match(re)
 			if match? then inflector = condition
 
 		if @_isDeleter(inflector)
@@ -163,9 +168,7 @@ class Inflection
 				root += markData.withThis
 			else
 				root = root.replace(markData.replaceThis, markData.withThis)
-			# marks += marker.mark(word, form)
-
-		# root += marks
+			
 
 		inflection = @[form][inflector](word)
 		return @_combine(root, inflection)
@@ -210,7 +213,7 @@ class Inflection
 		# + => (blank)
 		condition = condition.replace(/\+/gi,"")
 
-		#  xN => {N}
+		#  xN => {N;}
 		condition = condition.replace(/x(\d)/gi,"{$1}")
 
 		# or => |
@@ -246,19 +249,19 @@ class Inflection
 
 class Marker extends Inflection
 	constructor: (marker) ->
-		@.conditions = {}
+		@.conditions = { }
 		for key, value of marker
 			if key is "name" or key is "schema"
 				@[key] = value
 			else
 				parsedCondition = @_parseCondition(key)
-				@.conditions[parsedCondition] = {}
+				@.conditions[parsedCondition] = { }
 				@.conditions[parsedCondition].marker = @substitutor(value.form, value.replacements, marker.schema)
 				@.conditions[parsedCondition].exceptions =  value.exceptions
 
 				overrides = value.overrides
 				if overrides
-					@.conditions[parsedCondition].overrides = {}
+					@.conditions[parsedCondition].overrides = { }
 					for key, override of overrides
 						@.conditions[parsedCondition].overrides[key] = @substitutor(override.form, override.replacements, marker.schema)
 
@@ -273,17 +276,20 @@ class Marker extends Inflection
 		return ''
 
 	mark: (word, form) ->
-		rule = "default"
+		rule = ""
 		replaceThis = ""
 		root = word.lemma
 		ending = '' 
 		for condition, data of @conditions when condition isnt "default"
-			re = @_expandCondition(word, condition)
-			match = root.match(re)
 			# Match only one rule - in case some rules are subsets of other rules
-			if match? and rule isnt "default"
-				ending = match[0]
-				rule = condition
+			if rule is ''
+				re = @_expandCondition(word, condition)
+				match = root.match(re)
+				if match?
+					ending = match[0]
+					rule = condition
+		if rule is ''
+			rule = "default"
 
 		potentialException = @getException(root)
 		if potentialException isnt ""
@@ -298,10 +304,9 @@ class Marker extends Inflection
 
 		if @conditions[rule].assimilation
 			replaceThis = ending
-			console.log(ending)
-			withThis = @_assimilate(@conditions[rule].assimilation,ending)
+			withThis = @_assimilate(@conditions[rule].assimilation,ending)+withThis
 
-		return {'replaceThis': replaceThis, 'withThis': withThis}
+		return {'replaceThis': replaceThis, 'withThis': withThis;}
 
 
 class PhraseStructure

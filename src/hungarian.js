@@ -189,7 +189,7 @@ Inflection = (function() {
     var condition, key, parsedCondition, value, _ref;
     for (key in inflection) {
       value = inflection[key];
-      if (key === "name" || key === "schema" || key === "markers") {
+      if (key === "name" || key === "schema" || key === "markers" || key === "preprocess") {
         this[key] = value;
       } else {
         this[key] = {};
@@ -232,13 +232,18 @@ Inflection = (function() {
     var condition, inflection, inflector, markData, marker, marks, match, re, root, trimOff, _i, _len;
     inflector = "default";
     root = word.lemma;
+    if (this.preprocess) {
+      if (this.preprocess["for"].indexOf(form) !== -1) {
+        root = this._assimilate(this.preprocess["do"], root);
+      }
+    }
     for (condition in this[form]) {
       if (this._isDeleter(condition)) {
         re = new RegExp(condition.substr(1), "gi");
       } else {
         re = this._expandCondition(word, condition);
       }
-      match = word.lemma.match(re);
+      match = root.match(re);
       if (match != null) {
         inflector = condition;
       }
@@ -382,22 +387,26 @@ Marker = (function(_super) {
 
   Marker.prototype.mark = function(word, form) {
     var condition, data, ending, mark, match, potentialException, re, replaceThis, root, rule, withThis, _ref, _ref1;
-    rule = "default";
+    rule = "";
     replaceThis = "";
     root = word.lemma;
     ending = '';
     _ref = this.conditions;
     for (condition in _ref) {
       data = _ref[condition];
-      if (!(condition !== "default")) {
-        continue;
+      if (condition !== "default") {
+        if (rule === '') {
+          re = this._expandCondition(word, condition);
+          match = root.match(re);
+          if (match != null) {
+            ending = match[0];
+            rule = condition;
+          }
+        }
       }
-      re = this._expandCondition(word, condition);
-      match = root.match(re);
-      if ((match != null) && rule !== "default") {
-        ending = match[0];
-        rule = condition;
-      }
+    }
+    if (rule === '') {
+      rule = "default";
     }
     potentialException = this.getException(root);
     if (potentialException !== "") {
@@ -411,8 +420,7 @@ Marker = (function(_super) {
     withThis = this._combine('', mark);
     if (this.conditions[rule].assimilation) {
       replaceThis = ending;
-      console.log(ending);
-      withThis = this._assimilate(this.conditions[rule].assimilation, ending);
+      withThis = this._assimilate(this.conditions[rule].assimilation, ending) + withThis;
     }
     return {
       'replaceThis': replaceThis,
