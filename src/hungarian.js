@@ -233,7 +233,7 @@ Inflection = (function() {
     inflector = "default";
     root = word.lemma;
     if (this.preprocess) {
-      if (this.preprocess["for"].indexOf(form) !== -1) {
+      if (this.preprocess["for"].indexOf(form) !== -1 || this.preprocess["for"] === 'all') {
         root = this._assimilate(this.preprocess["do"], root);
       }
     }
