@@ -35,6 +35,20 @@ Language = (function() {
     return this.inflections[inflection.name] = new Inflection(inflection, false);
   };
 
+  Language.prototype.copyInflection = function(inflection, newName, overwrite) {
+    var key, newInflection, prop, _results;
+    this.inflections[newName] = {};
+    this.inflections[newName] = this._clone(this.inflections[inflection]);
+    newInflection = this.inflections[newName];
+    newInflection.name = newName;
+    _results = [];
+    for (key in overwrite) {
+      prop = overwrite[key];
+      _results.push(newInflection[key] = prop);
+    }
+    return _results;
+  };
+
   Language.prototype.inflect = function(word, form, additional) {
     var fullInflection, inflection, marker, markerList, _i, _len, _ref;
     if (additional != null) {
@@ -68,6 +82,18 @@ Language = (function() {
     } else {
       return this.rules[fromThis] = [toThis];
     }
+  };
+
+  Language.prototype._clone = function(obj) {
+    var key, newInstance;
+    if ((obj == null) || typeof obj !== 'object') {
+      return obj;
+    }
+    newInstance = new obj.constructor();
+    for (key in obj) {
+      newInstance[key] = this._clone(obj[key]);
+    }
+    return newInstance;
   };
 
   return Language;
@@ -176,11 +202,13 @@ Inflection = (function() {
   }
 
   Inflection.prototype.mergeSuff = function(stem, suffix) {
-    return stem + suffix.substr(1);
+    suffix = suffix.replace("+", "").replace("_", " ");
+    return stem + suffix;
   };
 
   Inflection.prototype.mergeAff = function(stem, affix) {
-    return affix.substr(affix.length - 1) + stem;
+    affix = affix.replace("+", "").replace("_", " ");
+    return affix + stem;
   };
 
   Inflection.prototype.parseException = function(inflection) {};
@@ -189,7 +217,7 @@ Inflection = (function() {
     var condition, key, parsedCondition, value, _ref;
     for (key in inflection) {
       value = inflection[key];
-      if (key === "name" || key === "schema" || key === "markers" || key === "preprocess") {
+      if (key === "name" || key === "schema" || key === "markers" || key === "preprocess" || key === "coverb") {
         this[key] = value;
       } else {
         this[key] = {};
@@ -263,11 +291,15 @@ Inflection = (function() {
       }
     }
     inflection = this[form][inflector](word);
-    return this._combine(root, inflection);
+    root = this._combine(root, inflection);
+    if (this.coverb != null) {
+      root = this._combine(root, this.coverb);
+    }
+    return root;
   };
 
   Inflection.prototype._combine = function(root, inflection) {
-    if (inflection.substr(0, 1) === '+') {
+    if (inflection.substr(0, 1) === '+' || inflection.substr(0, 1) === '_') {
       return this.mergeSuff(root, inflection);
     } else {
       return this.mergeAff(root, inflection);
@@ -335,7 +367,7 @@ Inflection = (function() {
         ending = ending.substr(0, 1) + ending;
       }
     }
-    return ending.replace(/\s/gi, "");
+    return ending.replace(/\s/gi, "").replace(/_/gi, " ");
   };
 
   return Inflection;

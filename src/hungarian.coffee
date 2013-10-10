@@ -20,6 +20,14 @@ class Language
 	inflection: (inflection) ->
 		@inflections[inflection.name] = new Inflection(inflection, false)
 
+	copyInflection: (inflection, newName, overwrite) ->
+		@inflections[newName] = {}
+		@inflections[newName] = @_clone(@inflections[inflection])
+		newInflection = @inflections[newName]
+		newInflection.name = newName
+		for key, prop of overwrite
+			newInflection[key] = prop 
+
 	inflect: (word, form, additional) ->
 		if additional?
 			fullInflection = word.pos + '-' + additional 
@@ -44,6 +52,16 @@ class Language
 			@rules[fromThis].push(toThis)
 		else
 			@rules[fromThis] = [toThis]
+
+	# From the CoffeeScript cookbook
+	_clone: (obj) ->
+		if not obj? or typeof obj isnt 'object'
+			return obj
+		newInstance = new obj.constructor()
+		for key of obj
+			newInstance[key] = @_clone obj[key]
+		return newInstance
+
 
 class Orthography
 	constructor: (@id,orthography) -> 
@@ -103,17 +121,19 @@ class Inflection
 
 	#add support for letter change rules
 	mergeSuff: (stem, suffix) ->
-		stem + suffix.substr(1)
+		suffix = suffix.replace("+","").replace("_"," ")
+		stem + suffix
 
 	mergeAff: (stem, affix) ->
-		affix.substr(affix.length-1) + stem
+		affix = affix.replace("+","").replace("_"," ")
+		affix + stem
 
 	parseException: (inflection) ->
 		 # Todo 
 
 	parseInflection: (inflection) ->
 		for key, value of inflection
-			if key in ["name","schema","markers","preprocess"] 
+			if key in ["name","schema","markers","preprocess","coverb"] 
 				@[key] = value
 			else
 				@[key] = { }
@@ -171,12 +191,14 @@ class Inflection
 			
 
 		inflection = @[form][inflector](word)
-		return @_combine(root, inflection)
-
+		root = @_combine(root, inflection)
+		if @.coverb?
+			root = @_combine(root,@.coverb)
+		return root
 
 	# combine the root and the inflection
 	_combine: (root, inflection) ->
-		if inflection.substr(0,1) is '+'
+		if inflection.substr(0,1) is '+' or inflection.substr(0,1) is '_'
 			@mergeSuff(root,inflection)
 		else
 			@mergeAff(root,inflection)
@@ -236,6 +258,7 @@ class Inflection
 				return idx
 		return valid
 
+	# use underscore to indicate space 
 	_assimilate: (rules, ending) ->
 		rules = rules.split(',')
 		for rule in rules
@@ -245,7 +268,8 @@ class Inflection
 				ending = ending.replace(rule.slice("remove".length+1),"")
 			if rule.indexOf('double') is 0
 				ending = ending.substr(0,1)+ending
-		return ending.replace(/\s/gi,"")
+
+		return ending.replace(/\s/gi,"").replace(/_/gi," ")
 
 class Marker extends Inflection
 	constructor: (marker) ->

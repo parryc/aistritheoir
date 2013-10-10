@@ -192,6 +192,36 @@ beforeEach(function(){
     }
   });
 
+  hungarian.inflection({
+    "schema": ["back","front"],
+    "name": "VERB-FUT",
+    "markers": ["INF"],
+    "1sg": {
+      "form": "_fogok",
+      "replacements": {}
+    },
+    "2sg": {
+      "form": "_fogsz",
+      "replacements": {}
+    },
+    "3sg": {
+      "form": "_fog",
+      "replacements": {}
+    },
+    "1pl": {
+      "form": "_fogunk",
+      "replacements": {}
+    },
+    "2pl": {
+      "form": "_fogtok",
+      "replacements": {}
+    },
+    "3pl": {
+      "form": "_fognak",
+      "replacements": {}
+    }
+  });
+
   hungarian.marker({
     "schema": ["back", "front.unrounded", "front.rounded"],
     "name": "PST",
@@ -257,6 +287,20 @@ beforeEach(function(){
     },
     "default": {
       "form":"+",
+      "replacements":{}
+    }
+  });
+
+  hungarian.marker({
+    "schema": ["back","front"],
+    "name": "INF",
+    "after 'vowels.long' + t or 'consonants' + t":{
+      "exceptions":  ["áll","száll","varr","forr"],
+      "form":"+Vni",
+      "replacements":{"V":["a","e"]}
+    },
+    "default": {
+      "form":"+ni",
       "replacements":{}
     }
   });
@@ -404,6 +448,19 @@ describe('Conjugations', function(){
       hungarian.inflect(uszik,'1sg','COND').should.equal('úsznék');
       hungarian.inflect(uszik,'3sg','COND').should.equal('úszna');
       hungarian.inflect(uszik,'3pl','COND').should.equal('úsznának');
+    });
+  });
+
+  describe('for each indefinite verb in the future', function(){
+    it('if the ending ends in a long vowel or consonant with a t, it should conjugate and mark correctly', function(){
+      hungarian.inflect(segit,'1sg','FUT').should.equal('segíteni fogok');
+      hungarian.inflect(segit,'2sg','FUT').should.equal('segíteni fogsz');
+      hungarian.inflect(segit,'3sg','FUT').should.equal('segíteni fog');
+    });
+    it('and for the rest, it should conjugate', function(){
+      hungarian.inflect(mer,'1sg','FUT').should.equal('merni fogok');
+      hungarian.inflect(mer,'2sg','FUT').should.equal('merni fogsz');
+      hungarian.inflect(mer,'3sg','FUT').should.equal('merni fog');
     });
   });
 });
