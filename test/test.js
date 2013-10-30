@@ -25,16 +25,16 @@ beforeEach(function(){
   });
 
   hungarian.word("ért", "VERB");
-  word1 = hungarian.words.ért;
+  ert = hungarian.words.ért;
 
   hungarian.word("tanít", "VERB");
-  word2 = hungarian.words.tanít;
+  tanit = hungarian.words.tanít;
 
   hungarian.word("játszik","VERB");
-  word3 = hungarian.words.játszik;
+  jatszik = hungarian.words.játszik;
 
   hungarian.word("fordít","VERB");
-  word4 = hungarian.words.fordít;
+  fordit = hungarian.words.fordít;
 
   hungarian.inflection({
     "schema": ["back","front.unrounded","front.rounded"],
@@ -161,6 +161,67 @@ beforeEach(function(){
     }
   });
 
+  hungarian.inflection({
+    "schema": ["back","front"],
+    "name": "VERB-COND",
+    "markers": ["COND"],
+    "preprocess": {"for":"all","do":"remove ik"},
+    "1sg": {
+      "form": "+nék",
+      "replacements": {}
+    },
+    "2sg": {
+      "form": "+nVl",
+      "replacements": {"V": ["á","é"]}
+    },
+    "3sg": {
+      "form": "+nV",
+      "replacements": {"V": ["a","e"]}
+    },
+    "1pl": {
+      "form": "+nVnk",
+      "replacements": {"V": ["á","é"]}
+    },
+    "2pl": {
+      "form": "+nAtBk",
+      "replacements": {"A":  ["á","é"], "B": ["o","e"]}
+    },
+    "3pl": {
+      "form": "+nAnBk",
+      "replacements": {"A":  ["á","é"], "B": ["a","e"]}
+    }
+  });
+
+  hungarian.inflection({
+    "schema": ["back","front"],
+    "name": "VERB-FUT",
+    "markers": ["INF"],
+    "1sg": {
+      "form": "_fogok",
+      "replacements": {}
+    },
+    "2sg": {
+      "form": "_fogsz",
+      "replacements": {}
+    },
+    "3sg": {
+      "form": "_fog",
+      "replacements": {}
+    },
+    "1pl": {
+      "form": "_fogunk",
+      "replacements": {}
+    },
+    "2pl": {
+      "form": "_fogtok",
+      "replacements": {}
+    },
+    "3pl": {
+      "form": "_fognak",
+      "replacements": {}
+    }
+  });
+
   hungarian.marker({
     "schema": ["back", "front.unrounded", "front.rounded"],
     "name": "PST",
@@ -214,6 +275,36 @@ beforeEach(function(){
     }
   });
 
+  //Rolled the actual marker into the inflection for ease of rules.
+  //It's actually shown that way in Rounds' Hungarian Grammar, too. [4.3.7.1]
+  hungarian.marker({
+    "schema": ["back","front"],
+    "name": "COND",
+    "after 'vowels.long' + t or 'consonants' + t":{
+      "exceptions":  ["áll","száll","varr","forr"],
+      "form":"+V",
+      "replacements":{"V":["a","e"]}
+    },
+    "default": {
+      "form":"+",
+      "replacements":{}
+    }
+  });
+
+  hungarian.marker({
+    "schema": ["back","front"],
+    "name": "INF",
+    "after 'vowels.long' + t or 'consonants' + t":{
+      "exceptions":  ["áll","száll","varr","forr"],
+      "form":"+Vni",
+      "replacements":{"V":["a","e"]}
+    },
+    "default": {
+      "form":"+ni",
+      "replacements":{}
+    }
+  });
+
   hungarian.phraseStructure("S","VERB");
 });
 
@@ -228,21 +319,21 @@ describe('Language', function() {
 describe('Words', function(){
   describe('on creation', function(){
     it('should have a lemma', function(){
-      word1.lemma.should.equal('ért');
+      ert.lemma.should.equal('ért');
     });
 
     it('should have a pos', function(){
-      word1.pos.should.equal('VERB');
+      ert.pos.should.equal('VERB');
     });
 
     it('should have a vowel category', function(){
-      word1.vowel.should.equal('front.unrounded');
+      ert.vowel.should.equal('front.unrounded');
     });
   });
 
   describe('should be able to tell you', function(){
     it('has certain letters', function(){
-      word2.has("vowels.front.unrounded").should.equal(true);
+      tanit.has("vowels.front.unrounded").should.equal(true);
     });
   });
 });
@@ -250,35 +341,35 @@ describe('Words', function(){
 describe('Conjugations', function(){
   describe('for each indefinite verb in the present tense,', function(){
     it('if base, should return the correct conjugation', function(){
-      hungarian.inflect(word1,"1sg").should.equal('értek');
-      hungarian.inflect(word1,"3sg").should.equal('ért');
-      hungarian.inflect(word1,"1pl").should.equal('értünk');
+      hungarian.inflect(ert,"1sg").should.equal('értek');
+      hungarian.inflect(ert,"3sg").should.equal('ért');
+      hungarian.inflect(ert,"1pl").should.equal('értünk');
 
 
-      hungarian.inflect(word2,"1sg").should.equal('tanítok');
-      hungarian.inflect(word2,"2sg").should.equal('tanítasz');
-      hungarian.inflect(word2,"3sg").should.equal('tanít');
-      hungarian.inflect(word2,"1pl").should.equal('tanítunk');
-      hungarian.inflect(word2,"2pl").should.equal('tanítotok');
-      hungarian.inflect(word2,"3pl").should.equal('tanítanak');
+      hungarian.inflect(tanit,"1sg").should.equal('tanítok');
+      hungarian.inflect(tanit,"2sg").should.equal('tanítasz');
+      hungarian.inflect(tanit,"3sg").should.equal('tanít');
+      hungarian.inflect(tanit,"1pl").should.equal('tanítunk');
+      hungarian.inflect(tanit,"2pl").should.equal('tanítotok');
+      hungarian.inflect(tanit,"3pl").should.equal('tanítanak');
     });
 
     it('if ik verb, should return the correct conjugation', function(){
-      hungarian.inflect(word3,"1sg").should.equal('játszom');
-      hungarian.inflect(word3,"2sg").should.equal('játszol');
-      hungarian.inflect(word3,"3sg").should.equal('játszik');
+      hungarian.inflect(jatszik,"1sg").should.equal('játszom');
+      hungarian.inflect(jatszik,"2sg").should.equal('játszol');
+      hungarian.inflect(jatszik,"3sg").should.equal('játszik');
     });
 
     it('if after two consonants should return the correct conjugation', function(){
-      hungarian.inflect(word1,"2sg").should.equal('értesz');
-      hungarian.inflect(word1,"2pl").should.equal('értetek');
-      hungarian.inflect(word1,"3pl").should.equal('értenek');
+      hungarian.inflect(ert,"2sg").should.equal('értesz');
+      hungarian.inflect(ert,"2pl").should.equal('értetek');
+      hungarian.inflect(ert,"3pl").should.equal('értenek');
     });
 
     it('if after a long vowel + t, should return the correct conjugation', function(){
-      hungarian.inflect(word4,"2sg").should.equal("fordítasz");
-      hungarian.inflect(word4,"2pl").should.equal("fordítotok");
-      hungarian.inflect(word4,"3pl").should.equal("fordítanak");
+      hungarian.inflect(fordit,"2sg").should.equal("fordítasz");
+      hungarian.inflect(fordit,"2pl").should.equal("fordítotok");
+      hungarian.inflect(fordit,"3pl").should.equal("fordítanak");
     });
 
     it('if after a sibilant, should return the correct conjugation', function(){
@@ -291,7 +382,7 @@ describe('Conjugations', function(){
 
   describe('for each indefinite verb in the past tense,', function(){
     it('if class A, should return the correct conjugation', function(){
-      hungarian.inflect(word2,'1sg','PST').should.equal('tanítottam');
+      hungarian.inflect(tanit,'1sg','PST').should.equal('tanítottam');
     });
     it('if class B, should return the correct conjugation', function(){
       hungarian.word('marad', 'VERB');
@@ -326,6 +417,50 @@ describe('Conjugations', function(){
     it('if the ending ends in a short vowel, it should conjugate and assimilate correctly', function(){
       hungarian.word('mutat','VERB');
       hungarian.inflect(hungarian.words.mutat,'1sg','SUBJ').should.equal('mutassak');
+    });
+  });
+
+  describe('for each indefinite verb in the conditional', function(){
+    before(function(){
+      hungarian.word('segít','VERB');
+      segit = hungarian.words.segít;
+      hungarian.word('mer','VERB');
+      mer = hungarian.words.mer;
+      hungarian.word('úszik','VERB');
+      uszik = hungarian.words.úszik; 
+    });
+
+    it('if the ending ends in a long vowel or consonant with a t, it should conjugate and mark correctly', function(){
+      hungarian.inflect(segit,'1sg','COND').should.equal('segítenék');
+      hungarian.inflect(segit,'2sg','COND').should.equal('segítenél');
+      hungarian.inflect(segit,'3sg','COND').should.equal('segítene');
+      hungarian.inflect(segit,'1pl','COND').should.equal('segítenénk');
+      hungarian.inflect(segit,'2pl','COND').should.equal('segítenétek');
+      hungarian.inflect(segit,'3pl','COND').should.equal('segítenének');
+      hungarian.inflect(fordit,'1sg','COND').should.equal('fordítanék');
+      hungarian.inflect(fordit,'3sg','COND').should.equal('fordítana');
+      hungarian.inflect(fordit,'3pl','COND').should.equal('fordítanának');
+    });
+    it('and for the rest, it should conjugate', function(){
+      hungarian.inflect(mer,'1sg','COND').should.equal('mernék');
+      hungarian.inflect(mer,'3sg','COND').should.equal('merne');
+      hungarian.inflect(mer,'3pl','COND').should.equal('mernének');
+      hungarian.inflect(uszik,'1sg','COND').should.equal('úsznék');
+      hungarian.inflect(uszik,'3sg','COND').should.equal('úszna');
+      hungarian.inflect(uszik,'3pl','COND').should.equal('úsznának');
+    });
+  });
+
+  describe('for each indefinite verb in the future', function(){
+    it('if the ending ends in a long vowel or consonant with a t, it should conjugate and mark correctly', function(){
+      hungarian.inflect(segit,'1sg','FUT').should.equal('segíteni fogok');
+      hungarian.inflect(segit,'2sg','FUT').should.equal('segíteni fogsz');
+      hungarian.inflect(segit,'3sg','FUT').should.equal('segíteni fog');
+    });
+    it('and for the rest, it should conjugate', function(){
+      hungarian.inflect(mer,'1sg','FUT').should.equal('merni fogok');
+      hungarian.inflect(mer,'2sg','FUT').should.equal('merni fogsz');
+      hungarian.inflect(mer,'3sg','FUT').should.equal('merni fog');
     });
   });
 });
