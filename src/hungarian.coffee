@@ -21,7 +21,7 @@ class Language
 		@inflections[inflection.name] = new Inflection(inflection, false)
 
 	inflect: (word, form, additional) ->
-		if additional?
+		if additional? and additional isnt ""
 			fullInflection = word.pos + '-' + additional 
 		else 
 			fullInflection = word.pos

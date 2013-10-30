@@ -37,7 +37,7 @@ Language = (function() {
 
   Language.prototype.inflect = function(word, form, additional) {
     var fullInflection, inflection, marker, markerList, _i, _len, _ref;
-    if (additional != null) {
+    if ((additional != null) && additional !== "") {
       fullInflection = word.pos + '-' + additional;
     } else {
       fullInflection = word.pos;
