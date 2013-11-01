@@ -3,6 +3,7 @@ var should = require('chai').should(),
     Orthography = require('../src/hungarian.js').Orthography,
     Word = require('../src/hungarian.js').Word,
     Inflection = require('../src/hungarian.js').Inflection;
+    Analyzer = require('../src/analyze.js').Analyzer;
 
 beforeEach(function(){
   hungarian = new Language("hungarian");
@@ -306,6 +307,8 @@ beforeEach(function(){
   });
 
   hungarian.phraseStructure("S","VERB");
+
+  analyzer = new Analyzer(hungarian);
 });
 
 describe('Language', function() {
@@ -471,6 +474,16 @@ describe('Phrase Structure rules', function(){
   describe('on creation', function(){
     it('should store rules correctly', function(){
       hungarian.rules['S'] = ["VERB"];
+    });
+  });
+});
+
+
+//Analyzer
+describe('The analyzer', function(){
+  describe('for the present tense', function(){
+    it('should detect the correct number and person for a verbal ending', function(){
+      analyzer.getPerson('értek').should.equal('1sg');
     });
   });
 });

@@ -165,8 +165,7 @@ class Inflection
 		inflector = "default"
 		root = word.lemma
 
-		if @.preprocess
-			if @.preprocess.for.indexOf(form) isnt -1 or @.preprocess.for is 'all'
+		if @.preprocess and (@.preprocess.for.indexOf(form) isnt -1 or @.preprocess.for is 'all')
 				root = @_assimilate(@.preprocess.do,root)
 
 		for condition of @[form]

@@ -260,10 +260,8 @@ Inflection = (function() {
     var condition, inflection, inflector, markData, marker, marks, match, re, root, trimOff, _i, _len;
     inflector = "default";
     root = word.lemma;
-    if (this.preprocess) {
-      if (this.preprocess["for"].indexOf(form) !== -1 || this.preprocess["for"] === 'all') {
-        root = this._assimilate(this.preprocess["do"], root);
-      }
+    if (this.preprocess && (this.preprocess["for"].indexOf(form) !== -1 || this.preprocess["for"] === 'all')) {
+      root = this._assimilate(this.preprocess["do"], root);
     }
     for (condition in this[form]) {
       if (this._isDeleter(condition)) {
