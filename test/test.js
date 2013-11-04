@@ -1,9 +1,9 @@
 var should = require('chai').should(),
+    Analyzer = require('../src/analyze.js').Analyzer;
     Language = require('../src/hungarian.js').Language,
     Orthography = require('../src/hungarian.js').Orthography,
     Word = require('../src/hungarian.js').Word,
     Inflection = require('../src/hungarian.js').Inflection;
-    Analyzer = require('../src/analyze.js').Analyzer;
 
 beforeEach(function(){
   hungarian = new Language("hungarian");
@@ -483,7 +483,16 @@ describe('Phrase Structure rules', function(){
 describe('The analyzer', function(){
   describe('for the present tense', function(){
     it('should detect the correct number and person for a verbal ending', function(){
-      analyzer.getPerson('értek').should.equal('1sg');
+      var toList = function(res){
+            var arr = []; 
+            res.forEach(function(v){
+              arr.push(v.person);
+            });
+            return arr;
+          };
+      (toList(analyzer.getPerson('értek')).indexOf('1sg') >= 0).should.equal(true);
+      (toList(analyzer.getPerson('játszol')).indexOf('2sg') >= 0).should.equal(true);
+      (toList(analyzer.getPerson('fordítanak')).indexOf('3pl') >= 0).should.equal(true);
     });
   });
 });

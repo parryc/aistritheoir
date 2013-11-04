@@ -7,6 +7,7 @@ class Language
 	orthographies: { }
 	words: { }
 	inflections: { }
+	inflectionsRaw: { } # Used for the analyzer
 	markers: { }
 	rules: { } # Phrase structure rules
 
@@ -18,6 +19,7 @@ class Language
 		@orthographies[id] = new Orthography(id, orthography)
 
 	inflection: (inflection) ->
+		@inflectionsRaw[inflection.name] = inflection
 		@inflections[inflection.name] = new Inflection(inflection, false)
 
 	copyInflection: (inflection, newName, overwrite) ->

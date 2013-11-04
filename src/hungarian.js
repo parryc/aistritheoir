@@ -17,6 +17,8 @@ Language = (function() {
 
   Language.prototype.inflections = {};
 
+  Language.prototype.inflectionsRaw = {};
+
   Language.prototype.markers = {};
 
   Language.prototype.rules = {};
@@ -32,6 +34,7 @@ Language = (function() {
   };
 
   Language.prototype.inflection = function(inflection) {
+    this.inflectionsRaw[inflection.name] = inflection;
     return this.inflections[inflection.name] = new Inflection(inflection, false);
   };
 

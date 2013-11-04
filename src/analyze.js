@@ -4,15 +4,16 @@ var Analyzer;
 Analyzer = (function() {
   function Analyzer(language) {
     var current, i, person, rule, verb, _i, _len, _ref;
+    this.language = language;
     this.matrix = [];
     i = 0;
-    while (i < 64) {
+    while (i < 32) {
       this.matrix[i] = [i];
-      this.matrix[i].length = 64;
+      this.matrix[i].length = 32;
       i++;
     }
     i = 0;
-    while (i < 64) {
+    while (i < 32) {
       this.matrix[0][i] = i;
       i++;
     }
@@ -20,8 +21,8 @@ Analyzer = (function() {
       var cost, j, min, t, thatLength, that_j, thisLength, this_i;
       thisLength = __this.length;
       thatLength = that.length;
-      if (Math.abs(thisLength - thatLength) > (limit || 32)) {
-        return limit || 32;
+      if (Math.abs(thisLength - thatLength) > (limit || 16)) {
+        return limit || 16;
       }
       if (thisLength === 0) {
         return thatLength;
@@ -47,21 +48,20 @@ Analyzer = (function() {
             min = t;
           }
           this.matrix[i][j] = min;
-          ++j;
+          j++;
         }
+        i++;
       }
-      ++i;
       return this.matrix[thisLength][thatLength];
     };
     this.persons = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
     this.markers = [];
-    verb = language.inflections['VERB'];
+    verb = language.inflectionsRaw['VERB'];
     _ref = this.persons;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       person = _ref[_i];
-      current = verb[person];
-      console.log(current);
       this.markers[person] = [];
+      current = verb[person];
       if (!current['default']) {
         this.markers[person] = this.replace(current);
       } else {
@@ -89,27 +89,38 @@ Analyzer = (function() {
   };
 
   Analyzer.prototype.getPerson = function(word) {
-    var adjLevenDist, currPers, ending, ld, min, person, wordEnding, _i, _j, _len, _len1, _ref, _ref1;
+    var adjLevenDist, currPers, ending, ld, min, person, potentialRoot, results, wordEnding, _i, _j, _len, _len1, _ref, _ref1;
     min = 0;
     currPers = "error";
-    console.log(this.markers);
+    results = [];
     _ref = this.persons;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       person = _ref[_i];
       _ref1 = this.markers[person];
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         ending = _ref1[_j];
-        console.log(ending);
+        potentialRoot = word.substring(0, word.length - ending.length);
         wordEnding = word.substring(word.length - ending.length);
         ld = this.levenshteinDistance(wordEnding, ending);
         adjLevenDist = (ld === 0 ? (-10) - ending.length : ld - ending.length);
-        if (adjLevenDist < min) {
-          min = adjLevenDist;
-          currPers = person;
+        if (adjLevenDist < -10) {
+          if (adjLevenDist < min) {
+            results.push({
+              'person': person,
+              'root': potentialRoot
+            });
+          } else {
+            results.unshift({
+              'person': person,
+              'root': potentialRoot
+            });
+            min = adjLevenDist;
+            currPers = person;
+          }
         }
       }
     }
-    return currPers;
+    return results;
   };
 
   return Analyzer;
