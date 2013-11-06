@@ -110,65 +110,61 @@ Analyzer = (function() {
   Analyzer.prototype.getMorphology = function(word) {
     var potentials;
     potentials = this.getPerson(word);
-    console.log("Potentials");
-    console.log(potentials);
     return this.getTense(potentials);
   };
 
   Analyzer.prototype.getPerson = function(word) {
-    var adjLevenDist, baseInflections, currPers, ending, inflection, ld, min, person, potentialRoot, results, wordEnding, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+    var currPers, ending, inflection, ld, min, minRoot, person, potentialEnding, potentialRoot, results, uninflected, wordEnding, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
     min = 0;
     currPers = "error";
     results = [];
-    baseInflections = [];
+    uninflected = [];
     _ref = this.inflections;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       inflection = _ref[_i];
       _ref1 = this.persons;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         person = _ref1[_j];
-        if (this.inflectionEndings[inflection][person].length === 0) {
-          baseInflections.push({
-            'person': person,
-            'root': word,
-            'inflection': inflection
-          });
-        }
+        minRoot = 'superlongsuperlongomfgomfg';
+        potentialEnding = '';
         _ref2 = this.inflectionEndings[inflection][person];
         for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
           ending = _ref2[_k];
           potentialRoot = word.substring(0, word.length - ending.length);
           wordEnding = word.substring(word.length - ending.length);
           ld = this.levenshteinDistance(wordEnding, ending);
-          adjLevenDist = (ld === 0 ? (-10) - ending.length : ld - ending.length);
-          if (adjLevenDist <= -10) {
-            if (adjLevenDist < min) {
-              results.push({
-                'original': word,
-                'person': person,
-                'root': potentialRoot,
-                'inflection': inflection
-              });
-            } else {
-              results.unshift({
-                'original': word,
-                'person': person,
-                'root': potentialRoot,
-                'inflection': inflection
-              });
-              min = adjLevenDist;
-              currPers = person;
-            }
+          if (ld === 0 && potentialRoot.length < minRoot.length) {
+            minRoot = potentialRoot;
+            potentialEnding = ending;
           }
         }
+        if (ending.length !== 0 && minRoot !== 'superlongsuperlongomfgomfg') {
+          results.push({
+            'original': word,
+            'person': person,
+            'root': minRoot,
+            'inflection': inflection
+          });
+        } else {
+          uninflected.push({
+            'original': word,
+            'person': person,
+            'root': minRoot,
+            'inflection': inflection
+          });
+        }
       }
+    }
+    if (results.length === 0) {
+      results = uninflected;
     }
     return results;
   };
 
   Analyzer.prototype.getTense = function(potentials) {
-    var found, info, marker, potential, potentialRoot, root, rule, tense, _i, _len, _results;
-    _results = [];
+    var found, info, marker, potential, potentialRoot, result, root, rule, tense, _i, _len;
+    result = {};
+    found = false;
     for (_i = 0, _len = potentials.length; _i < _len; _i++) {
       potential = potentials[_i];
       tense = potential.inflection.split('-').pop();
@@ -176,32 +172,29 @@ Analyzer = (function() {
         tense = '';
       }
       marker = this.markers[tense];
+      root = potential.root;
       if (marker != null) {
-        root = potential.root;
-        found = false;
-        _results.push((function() {
-          var _results1;
-          _results1 = [];
-          for (rule in marker) {
-            info = marker[rule];
-            if (!(rule !== 'schema' && rule !== 'name')) {
-              continue;
-            }
-            potentialRoot = root.substring(0, root.length - info.form.length - 1);
-            if (!found && this.language.inflect(this.language.tempWord(potentialRoot, "VERB"), potential.person, tense) === potential.original) {
-              console.log(potentialRoot + ' ' + potential.person + " " + tense);
-              _results1.push(found = true);
-            } else {
-              _results1.push(void 0);
-            }
+        for (rule in marker) {
+          info = marker[rule];
+          if (!(rule !== 'schema' && rule !== 'name')) {
+            continue;
           }
-          return _results1;
-        }).call(this));
-      } else {
-        _results.push(void 0);
+          potentialRoot = root.substring(0, root.length - info.form.length - 1);
+          if (!found && this.language.inflect(this.language.tempWord(potentialRoot, "VERB"), potential.person, tense) === potential.original) {
+            result.root = potentialRoot;
+            result.person = potential.person;
+            result.tense = tense;
+            found = true;
+          }
+        }
+      } else if (!found && this.language.inflect(this.language.tempWord(root, "VERB"), potential.person, tense) === potential.original) {
+        result.root = root;
+        result.person = potential.person;
+        result.tense = tense;
+        found = true;
       }
     }
-    return _results;
+    return result;
   };
 
   Analyzer.prototype._unassimilate = function(rules, word) {

@@ -78,50 +78,60 @@ class Analyzer
 
 	getMorphology: (word) ->
 		potentials = @getPerson(word)
+		# console.log(potentials)
 		@getTense(potentials)
 
 	getPerson: (word) ->
 		min = 0
 		currPers = "error"
 		results = []
-		baseInflections = []
+		uninflected = []
 		for inflection in @inflections
 			for person in @persons
-				if @inflectionEndings[inflection][person].length is 0
-					baseInflections.push({'person':person,'root':word, 'inflection': inflection})
+				minRoot = 'superlongsuperlongomfgomfg'
+				potentialEnding = ''
 				for ending in @inflectionEndings[inflection][person]
 					potentialRoot = word.substring(0,word.length-ending.length)
 					wordEnding = word.substring(word.length-ending.length)
 					ld = @levenshteinDistance(wordEnding,ending)
-					adjLevenDist = (if ld is 0 then (-10)-ending.length else ld-ending.length)
-					if adjLevenDist <= -10
-						if adjLevenDist < min
-							results.push({'original': word, 'person':person,'root':potentialRoot, 'inflection': inflection})
-						else
-							results.unshift({'original': word, 'person':person,'root':potentialRoot, 'inflection': inflection})
-							min = adjLevenDist
-							currPers = person
+					# we're going for the shortest possible root.  Because.
+					if ld is 0 and potentialRoot.length < minRoot.length
+						minRoot = potentialRoot
+						potentialEnding = ending
+				if ending.length isnt 0 and minRoot isnt 'superlongsuperlongomfgomfg'
+					results.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection})
+				else
+					uninflected.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection})
+
+		if results.length is 0
+			results = uninflected
 		return results
 
 	getTense: (potentials) ->
+		result = {}
+		found = false
 		for potential in potentials
 			tense = potential.inflection.split('-').pop()
 			if tense is 'VERB'
 				tense = ''
 			marker = @markers[tense]
+			root = potential.root
 			if marker?
-				root = potential.root
-				found = false
 				for rule, info of marker when rule isnt 'schema' and rule isnt 'name'
 					potentialRoot = root.substring(0,root.length-info.form.length-1)
 					if not found and @language.inflect(@language.tempWord(potentialRoot, "VERB"), potential.person, tense) is potential.original
-						console.log(potentialRoot + ' ' + potential.person + " " + tense)
+						result.root = potentialRoot
+						result.person = potential.person
+						result.tense = tense
 						found = true
-				# 	replacements = @replace(info, 1)
-				# 	for replacement in replacements when root.match(new RegExp(replacement, 'gi'))
-				# 		console.log("root: " + root.substring(0,root.length-replacement.length) + " marker " + marker.name + " person " + potential.person)
-				# 		if rule.assimilate?
-				# 			console.log(@_unassimilate(rule.assimilate,root))
+			# Checks for tenses that don't have additional markers (e.g. Hungarian present tense)
+			else if not found and @language.inflect(@language.tempWord(root, "VERB"), potential.person, tense) is potential.original
+				result.root = root
+				result.person = potential.person
+				result.tense = tense
+				found = true
+
+		return result
 
 	# use underscore to indicate space 
 	_unassimilate: (rules, word) ->
