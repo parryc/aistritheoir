@@ -3,7 +3,7 @@ var Analyzer;
 
 Analyzer = (function() {
   function Analyzer(language) {
-    var current, i, person, rule, verb, _i, _len, _ref;
+    var current, i, inflection, inflections, person, rule, schemaLength, verb, _i, _j, _len, _len1, _ref, _ref1;
     this.language = language;
     this.matrix = [];
     i = 0;
@@ -55,72 +55,171 @@ Analyzer = (function() {
       return this.matrix[thisLength][thatLength];
     };
     this.persons = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
-    this.markers = [];
-    verb = language.inflectionsRaw['VERB'];
-    _ref = this.persons;
+    this.inflectionEndings = [];
+    this.inflections = (function() {
+      var _results;
+      _results = [];
+      for (inflections in language.inflectionsRaw) {
+        _results.push(inflections);
+      }
+      return _results;
+    })();
+    this.markers = language.markersRaw;
+    _ref = this.inflections;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      person = _ref[_i];
-      this.markers[person] = [];
-      current = verb[person];
-      if (!current['default']) {
-        this.markers[person] = this.replace(current);
-      } else {
-        for (rule in current) {
-          this.markers[person] = this.markers[person].concat(this.replace(current[rule]));
+      inflection = _ref[_i];
+      verb = language.inflectionsRaw[inflection];
+      schemaLength = verb.schema.length;
+      this.inflectionEndings[inflection] = [];
+      _ref1 = this.persons;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        person = _ref1[_j];
+        this.inflectionEndings[inflection][person] = [];
+        current = verb[person];
+        if (!current['default']) {
+          this.inflectionEndings[inflection][person] = this.replace(current, schemaLength);
+        } else {
+          for (rule in current) {
+            this.inflectionEndings[inflection][person] = this.inflectionEndings[inflection][person].concat(this.replace(current[rule], schemaLength));
+          }
         }
       }
     }
   }
 
-  Analyzer.prototype.replace = function(sub) {
-    var ending, key, letter, letters, list, re, _i, _len, _ref;
+  Analyzer.prototype.replace = function(sub, schemaLength) {
+    var ending, key, letters, list, re, replacements, schemaPosition;
     list = [];
-    _ref = sub['replacements'];
-    for (key in _ref) {
-      letters = _ref[key];
-      re = new RegExp(key, "gi");
-      for (_i = 0, _len = letters.length; _i < _len; _i++) {
-        letter = letters[_i];
-        ending = sub['form'].replace(re, letter).replace('+', '');
-        list.push(ending);
+    replacements = sub['replacements'];
+    schemaPosition = 0;
+    while (schemaPosition < schemaLength) {
+      ending = sub['form'];
+      for (key in replacements) {
+        letters = replacements[key];
+        re = new RegExp(key, "gi");
+        ending = ending.replace(re, letters[schemaPosition]);
       }
+      list.push(ending.replace('+', ''));
+      schemaPosition++;
     }
-    return list;
+    return list.filter(function(value, index, self) {
+      return self.indexOf(value) === index;
+    });
+  };
+
+  Analyzer.prototype.getMorphology = function(word) {
+    var potentials;
+    potentials = this.getPerson(word);
+    console.log("Potentials");
+    console.log(potentials);
+    return this.getTense(potentials);
   };
 
   Analyzer.prototype.getPerson = function(word) {
-    var adjLevenDist, currPers, ending, ld, min, person, potentialRoot, results, wordEnding, _i, _j, _len, _len1, _ref, _ref1;
+    var adjLevenDist, baseInflections, currPers, ending, inflection, ld, min, person, potentialRoot, results, wordEnding, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
     min = 0;
     currPers = "error";
     results = [];
-    _ref = this.persons;
+    baseInflections = [];
+    _ref = this.inflections;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      person = _ref[_i];
-      _ref1 = this.markers[person];
+      inflection = _ref[_i];
+      _ref1 = this.persons;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        ending = _ref1[_j];
-        potentialRoot = word.substring(0, word.length - ending.length);
-        wordEnding = word.substring(word.length - ending.length);
-        ld = this.levenshteinDistance(wordEnding, ending);
-        adjLevenDist = (ld === 0 ? (-10) - ending.length : ld - ending.length);
-        if (adjLevenDist < -10) {
-          if (adjLevenDist < min) {
-            results.push({
-              'person': person,
-              'root': potentialRoot
-            });
-          } else {
-            results.unshift({
-              'person': person,
-              'root': potentialRoot
-            });
-            min = adjLevenDist;
-            currPers = person;
+        person = _ref1[_j];
+        if (this.inflectionEndings[inflection][person].length === 0) {
+          baseInflections.push({
+            'person': person,
+            'root': word,
+            'inflection': inflection
+          });
+        }
+        _ref2 = this.inflectionEndings[inflection][person];
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          ending = _ref2[_k];
+          potentialRoot = word.substring(0, word.length - ending.length);
+          wordEnding = word.substring(word.length - ending.length);
+          ld = this.levenshteinDistance(wordEnding, ending);
+          adjLevenDist = (ld === 0 ? (-10) - ending.length : ld - ending.length);
+          if (adjLevenDist <= -10) {
+            if (adjLevenDist < min) {
+              results.push({
+                'original': word,
+                'person': person,
+                'root': potentialRoot,
+                'inflection': inflection
+              });
+            } else {
+              results.unshift({
+                'original': word,
+                'person': person,
+                'root': potentialRoot,
+                'inflection': inflection
+              });
+              min = adjLevenDist;
+              currPers = person;
+            }
           }
         }
       }
     }
     return results;
+  };
+
+  Analyzer.prototype.getTense = function(potentials) {
+    var found, info, marker, potential, potentialRoot, root, rule, tense, _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = potentials.length; _i < _len; _i++) {
+      potential = potentials[_i];
+      tense = potential.inflection.split('-').pop();
+      if (tense === 'VERB') {
+        tense = '';
+      }
+      marker = this.markers[tense];
+      if (marker != null) {
+        root = potential.root;
+        found = false;
+        _results.push((function() {
+          var _results1;
+          _results1 = [];
+          for (rule in marker) {
+            info = marker[rule];
+            if (!(rule !== 'schema' && rule !== 'name')) {
+              continue;
+            }
+            potentialRoot = root.substring(0, root.length - info.form.length - 1);
+            if (!found && this.language.inflect(this.language.tempWord(potentialRoot, "VERB"), potential.person, tense) === potential.original) {
+              console.log(potentialRoot + ' ' + potential.person + " " + tense);
+              _results1.push(found = true);
+            } else {
+              _results1.push(void 0);
+            }
+          }
+          return _results1;
+        }).call(this));
+      } else {
+        _results.push(void 0);
+      }
+    }
+    return _results;
+  };
+
+  Analyzer.prototype._unassimilate = function(rules, word) {
+    var end, rule, _i, _len;
+    rules = rules.split(',').reverse();
+    for (_i = 0, _len = rules.length; _i < _len; _i++) {
+      rule = rules[_i];
+      rule = rule.trim();
+      rule.replace(/\+/gi, "");
+      if (rule.indexOf('remove') === 0) {
+        word = word + rule.slice("remove".length + 1);
+      }
+      if (rule.indexOf('double') === 0) {
+        end = word.match(/(\w)(\1+)/g).pop();
+        word = word.replace(end, end.substring(end.length + 1));
+      }
+    }
+    return word.replace(/\s/gi, "").replace(/_/gi, " ");
   };
 
   return Analyzer;

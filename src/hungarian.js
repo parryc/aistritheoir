@@ -21,10 +21,16 @@ Language = (function() {
 
   Language.prototype.markers = {};
 
+  Language.prototype.markersRaw = {};
+
   Language.prototype.rules = {};
 
   Language.prototype.word = function(word, pos) {
     return this.words[word] = new Word(word, pos, this.orthographies[this.defaultOrthography]);
+  };
+
+  Language.prototype.tempWord = function(word, pos) {
+    return new Word(word, pos, this.orthographies[this.defaultOrthography]);
   };
 
   Language.prototype.orthography = function(orthography) {
@@ -76,6 +82,7 @@ Language = (function() {
   };
 
   Language.prototype.marker = function(marker) {
+    this.markersRaw[marker.name] = marker;
     return this.markers[marker.name] = new Marker(marker);
   };
 

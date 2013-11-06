@@ -484,15 +484,33 @@ describe('The analyzer', function(){
   describe('for the present tense', function(){
     it('should detect the correct number and person for a verbal ending', function(){
       var toList = function(res){
-            var arr = []; 
-            res.forEach(function(v){
-              arr.push(v.person);
-            });
-            return arr;
-          };
+        var arr = []; 
+        res.forEach(function(v){
+          arr.push(v.person);
+        });
+        return arr;
+      };
       (toList(analyzer.getPerson('értek')).indexOf('1sg') >= 0).should.equal(true);
       (toList(analyzer.getPerson('játszol')).indexOf('2sg') >= 0).should.equal(true);
       (toList(analyzer.getPerson('fordítanak')).indexOf('3pl') >= 0).should.equal(true);
+    });
+  });
+
+  describe('for the past tense', function(){
+    it('should detect the correct number and person for a verbal ending', function(){
+      var toList = function(res){
+        var arr = []; 
+        res.forEach(function(v){
+          arr.push(v.person);
+        });
+        return arr;
+      };
+      console.log(analyzer.getMorphology('tanítottam'));
+      console.log(analyzer.getMorphology('szeretett'));
+      console.log(analyzer.getMorphology('sütöttem'));
+      (toList(analyzer.getPerson('tanítottam')).indexOf('1sg') >= 0).should.equal(true);
+      (toList(analyzer.getPerson('szeretett')).indexOf('3sg') >= 0).should.equal(true);
+      (toList(analyzer.getPerson('sütöttem')).indexOf('1sg') >= 0).should.equal(true);
     });
   });
 });

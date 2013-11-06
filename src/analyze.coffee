@@ -42,45 +42,100 @@ class Analyzer
 
 
 		@persons = ['1sg','2sg','3sg','1pl','2pl','3pl']
-		@markers = []
-		verb = language.inflectionsRaw['VERB']
-		for person in @persons
-			@markers[person] = []
-			current = verb[person]
-			if not current['default']
-				@markers[person] = @replace(current)
-			else
-				for rule of current
-					@markers[person] = @markers[person].concat(@replace(current[rule]))
+		@inflectionEndings = []
+		@inflections = (inflections for inflections of language.inflectionsRaw)
+		@markers = language.markersRaw
+
+		for inflection in @inflections
+			verb = language.inflectionsRaw[inflection]
+			schemaLength = verb.schema.length
+			@inflectionEndings[inflection] = []
+			for person in @persons
+				@inflectionEndings[inflection][person] = []
+				current = verb[person]
+				if not current['default']
+					@inflectionEndings[inflection][person] = @replace(current, schemaLength)
+				else
+					for rule of current
+						@inflectionEndings[inflection][person] = @inflectionEndings[inflection][person].concat(@replace(current[rule], schemaLength))
 	
 
-	replace: (sub) ->
+	replace: (sub, schemaLength) ->
 		list = []
-		for key, letters of sub['replacements']
-			re = new RegExp(key, "gi")
-			for letter in letters
-				ending = sub['form'].replace(re, letter).replace('+','')
-				list.push(ending)
-		return list;
+
+		replacements = sub['replacements']
+		schemaPosition = 0
+
+		while schemaPosition < schemaLength
+			ending = sub['form']
+			for key, letters of replacements
+				re = new RegExp(key,"gi")
+				ending = ending.replace(re,letters[schemaPosition])
+			list.push(ending.replace('+',''))
+			schemaPosition++
+		list.filter (value, index, self) ->
+			self.indexOf(value) is index
+
+	getMorphology: (word) ->
+		potentials = @getPerson(word)
+		@getTense(potentials)
 
 	getPerson: (word) ->
 		min = 0
 		currPers = "error"
 		results = []
-		for person in @persons
-			for ending in @markers[person]
-				potentialRoot = word.substring(0,word.length-ending.length)
-				wordEnding = word.substring(word.length-ending.length)
-				ld = @levenshteinDistance(wordEnding,ending)
-				adjLevenDist = (if ld is 0 then (-10)-ending.length else ld-ending.length)
-				if adjLevenDist < -10
-					if adjLevenDist < min
-						results.push({'person':person,'root':potentialRoot})
-					else
-						results.unshift({'person':person,'root':potentialRoot})
-						min = adjLevenDist
-						currPers = person
+		baseInflections = []
+		for inflection in @inflections
+			for person in @persons
+				if @inflectionEndings[inflection][person].length is 0
+					baseInflections.push({'person':person,'root':word, 'inflection': inflection})
+				for ending in @inflectionEndings[inflection][person]
+					potentialRoot = word.substring(0,word.length-ending.length)
+					wordEnding = word.substring(word.length-ending.length)
+					ld = @levenshteinDistance(wordEnding,ending)
+					adjLevenDist = (if ld is 0 then (-10)-ending.length else ld-ending.length)
+					if adjLevenDist <= -10
+						if adjLevenDist < min
+							results.push({'original': word, 'person':person,'root':potentialRoot, 'inflection': inflection})
+						else
+							results.unshift({'original': word, 'person':person,'root':potentialRoot, 'inflection': inflection})
+							min = adjLevenDist
+							currPers = person
 		return results
+
+	getTense: (potentials) ->
+		for potential in potentials
+			tense = potential.inflection.split('-').pop()
+			if tense is 'VERB'
+				tense = ''
+			marker = @markers[tense]
+			if marker?
+				root = potential.root
+				found = false
+				for rule, info of marker when rule isnt 'schema' and rule isnt 'name'
+					potentialRoot = root.substring(0,root.length-info.form.length-1)
+					if not found and @language.inflect(@language.tempWord(potentialRoot, "VERB"), potential.person, tense) is potential.original
+						console.log(potentialRoot + ' ' + potential.person + " " + tense)
+						found = true
+				# 	replacements = @replace(info, 1)
+				# 	for replacement in replacements when root.match(new RegExp(replacement, 'gi'))
+				# 		console.log("root: " + root.substring(0,root.length-replacement.length) + " marker " + marker.name + " person " + potential.person)
+				# 		if rule.assimilate?
+				# 			console.log(@_unassimilate(rule.assimilate,root))
+
+	# use underscore to indicate space 
+	_unassimilate: (rules, word) ->
+		rules = rules.split(',').reverse()
+		for rule in rules
+			rule = rule.trim()
+			rule.replace(/\+/gi,"")
+			if rule.indexOf('remove') is 0
+				word = word + rule.slice("remove".length+1)
+			if rule.indexOf('double') is 0
+				end = word.match(/(\w)(\1+)/g).pop()
+				word = word.replace(end,end.substring(end.length+1))
+
+		return word.replace(/\s/gi,"").replace(/_/gi," ")
 		
 if typeof module isnt 'undefined' and module.exports?
     exports.Analyzer = Analyzer

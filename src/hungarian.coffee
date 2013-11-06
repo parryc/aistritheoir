@@ -9,10 +9,15 @@ class Language
 	inflections: { }
 	inflectionsRaw: { } # Used for the analyzer
 	markers: { }
+	markersRaw: { } # Used for the analyzer
 	rules: { } # Phrase structure rules
 
 	word: (word, pos) -> 
 		@words[word] = new Word(word, pos, @orthographies[@defaultOrthography])
+	
+	# Used with analyzer
+	tempWord: (word, pos) ->
+		new Word(word, pos, @orthographies[@defaultOrthography])
 	
 	orthography: (orthography) ->
 		id = @defaultOrthography
@@ -47,6 +52,7 @@ class Language
 			console.log("There are no inflections of the type "+word.type)
 
 	marker: (marker) ->
+		@markersRaw[marker.name] = marker
 		@markers[marker.name] = new Marker(marker)
 
 	phraseStructure: (fromThis, toThis) ->
