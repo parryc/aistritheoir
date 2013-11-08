@@ -483,17 +483,64 @@ describe('Phrase Structure rules', function(){
 describe('The analyzer', function(){
   describe('for the present tense', function(){
     it('should detect the correct number and person for a verbal ending', function(){
-      analyzer.getMorphology('értek').person.should.equal('1sg');
-      analyzer.getMorphology('játszol').person.should.equal('2sg');
-      analyzer.getMorphology('fordítanak').person.should.equal('3pl');
+      analyzer.getMorphology('játszol').results[0].person.should.equal('2sg');
+      analyzer.getMorphology('játszol').results[0].tense.should.equal('');
+      analyzer.getMorphology('fordítanak').results[0].person.should.equal('3pl');
+      analyzer.getMorphology('fordítanak').results[0].tense.should.equal('');
+    });
+
+    it('should correctly identify ambiguous constructions', function(){
+      analyzer.getMorphology('értek').ambiguous.should.equal(true);
+      analyzer.getMorphology('értek').results[0].person.should.equal('1sg');
+      analyzer.getMorphology('értek').results[0].tense.should.equal('');
+      analyzer.getMorphology('értek').results[1].person.should.equal('2pl');
+      analyzer.getMorphology('értek').results[1].tense.should.equal('');
     });
   });
 
   describe('for the past tense', function(){
     it('should detect the correct number and person for a verbal ending', function(){
-      analyzer.getMorphology('tanítottam').person.should.equal('1sg');
-      analyzer.getMorphology('szeretett').person.should.equal('3sg');
-      analyzer.getMorphology('sütöttem').person.should.equal('1sg');
+      analyzer.getMorphology('tanítottam').results[0].person.should.equal('1sg');
+      analyzer.getMorphology('tanítottam').results[0].tense.should.equal('PST');
+      analyzer.getMorphology('szeretett').results[1].person.should.equal('3sg');
+      analyzer.getMorphology('szeretett').results[1].tense.should.equal('PST');
+      analyzer.getMorphology('sütöttem').results[0].person.should.equal('1sg');
+      analyzer.getMorphology('sütöttem').results[0].tense.should.equal('PST');
     });
   });
+
+  describe('for the subjunctive tense', function(){
+    it('should detect the correct number and person for a verbal ending', function(){
+      analyzer.getMorphology('keressek').results[1].person.should.equal('1sg');
+      analyzer.getMorphology('keressek').results[1].tense.should.equal('SUBJ');
+      analyzer.getMorphology('ébresszek').results[2].person.should.equal('1sg');
+      analyzer.getMorphology('ébresszek').results[2].tense.should.equal('SUBJ');
+      analyzer.getMorphology('segítsek').results[1].person.should.equal('1sg');
+      analyzer.getMorphology('segítsek').results[1].tense.should.equal('SUBJ');
+      analyzer.getMorphology('mutassak').results[0].person.should.equal('1sg');
+      analyzer.getMorphology('mutassak').results[0].tense.should.equal('SUBJ');
+    });
+  });
+
+  describe('for the subjunctive tense', function(){
+    it('should detect the correct number and person for a verbal ending', function(){
+      analyzer.getMorphology('fordítanának').results[1].person.should.equal('3pl');
+      analyzer.getMorphology('fordítanának').results[1].tense.should.equal('COND');
+      analyzer.getMorphology('mernék').results[0].person.should.equal('1sg');
+      analyzer.getMorphology('mernék').results[0].tense.should.equal('COND');
+      analyzer.getMorphology('úszna').results[0].person.should.equal('3sg');
+      analyzer.getMorphology('úszna').results[0].tense.should.equal('COND');
+    });
+  });
+
+
 });
+
+/*
+      //console.log( analyzer.getMorphology('segítenék').results);
+      // analyzer.getMorphology('segítenék').results[0].person.should.equal('1sg');
+      // analyzer.getMorphology('segítenék').results[0].tense.should.equal('COND');
+      //console.log(analyzer.getMorphology('segítenétek').results) //.should.equal('2pl');
+      //analyzer.getMorphology('segítenétek').results[3].tense.should.equal('COND');
+      console.log(JSON.stringify(analyzer.getMorphology('fordítanának').results[1]))
+*/
