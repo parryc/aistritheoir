@@ -10,6 +10,8 @@ class Language
 	inflectionsRaw: { } # Used for the analyzer
 	markers: { }
 	markersRaw: { } # Used for the analyzer
+	derivations: { }
+	derivationsRaw: { } # Used for the analyzer
 	rules: { } # Phrase structure rules
 
 	word: (word, pos) -> 
@@ -54,6 +56,10 @@ class Language
 	marker: (marker) ->
 		@markersRaw[marker.name] = marker
 		@markers[marker.name] = new Marker(marker)
+
+	derivation: (derivation) ->
+		@derivationsRaw[derivation.name] = derivation
+		@derivations[derivation.name] = new Derivation(derivation)
 
 	phraseStructure: (fromThis, toThis) ->
 		if @rules[fromThis]

@@ -23,6 +23,10 @@ Language = (function() {
 
   Language.prototype.markersRaw = {};
 
+  Language.prototype.derivations = {};
+
+  Language.prototype.derivationsRaw = {};
+
   Language.prototype.rules = {};
 
   Language.prototype.word = function(word, pos) {
@@ -84,6 +88,11 @@ Language = (function() {
   Language.prototype.marker = function(marker) {
     this.markersRaw[marker.name] = marker;
     return this.markers[marker.name] = new Marker(marker);
+  };
+
+  Language.prototype.derivation = function(derivation) {
+    this.derivationsRaw[derivation.name] = derivation;
+    return this.derivations[derivation.name] = new Derivation(derivation);
   };
 
   Language.prototype.phraseStructure = function(fromThis, toThis) {
