@@ -31,14 +31,13 @@ class Analyzer
 			for key, letters of replacements
 				re = new RegExp(key,"gi")
 				ending = ending.replace(re,letters[schemaPosition])
-			list.push(ending.replace('+',''))
+			list.push(ending.replace('+','').replace('_',' '))
 			schemaPosition++
 		list.filter (value, index, self) ->
 			self.indexOf(value) is index
 
 	getMorphology: (word) ->
 		potentials = @getPerson(word)
-		# console.log(potentials)
 		@getTense(potentials)
 
 	getPerson: (word) ->
@@ -74,8 +73,13 @@ class Analyzer
 		for potential in potentials
 			tense = potential.inflection.split('-').pop()
 			if tense is 'VERB'
+				mark = ''
 				tense = ''
-			marker = @markers[tense]
+			else
+				mark = @language.inflections[potential.inflection].markers?[0]
+
+			marker = @markers[mark]
+			
 			root = potential.root
 			if marker?
 				# keep from having duplicate roots appear

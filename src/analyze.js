@@ -51,7 +51,7 @@ Analyzer = (function() {
         re = new RegExp(key, "gi");
         ending = ending.replace(re, letters[schemaPosition]);
       }
-      list.push(ending.replace('+', ''));
+      list.push(ending.replace('+', '').replace('_', ' '));
       schemaPosition++;
     }
     return list.filter(function(value, index, self) {
@@ -113,7 +113,7 @@ Analyzer = (function() {
   };
 
   Analyzer.prototype.getTense = function(potentials) {
-    var ambiguous, info, marker, potential, potentialRoot, result, resultList, root, rule, seenRoot, tense, _i, _len;
+    var ambiguous, info, mark, marker, potential, potentialRoot, result, resultList, root, rule, seenRoot, tense, _i, _len, _ref;
     result = {};
     resultList = [];
     seenRoot = [];
@@ -122,9 +122,12 @@ Analyzer = (function() {
       potential = potentials[_i];
       tense = potential.inflection.split('-').pop();
       if (tense === 'VERB') {
+        mark = '';
         tense = '';
+      } else {
+        mark = (_ref = this.language.inflections[potential.inflection].markers) != null ? _ref[0] : void 0;
       }
-      marker = this.markers[tense];
+      marker = this.markers[mark];
       root = potential.root;
       if (marker != null) {
         seenRoot = [];

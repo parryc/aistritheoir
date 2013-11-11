@@ -522,7 +522,7 @@ describe('The analyzer', function(){
     });
   });
 
-  describe('for the subjunctive tense', function(){
+  describe('for the conditional tense', function(){
     it('should detect the correct number and person for a verbal ending', function(){
       analyzer.getMorphology('fordítanának').results[1].person.should.equal('3pl');
       analyzer.getMorphology('fordítanának').results[1].tense.should.equal('COND');
@@ -533,14 +533,12 @@ describe('The analyzer', function(){
     });
   });
 
-
+  describe('for the future tense', function(){
+    it('should detect the correct number and person for a verbal ending', function(){
+      analyzer.getMorphology('segíteni fogok').results[0].person.should.equal('1sg');
+      analyzer.getMorphology('segíteni fogok').results[0].tense.should.equal('FUT');
+      analyzer.getMorphology('merni fog').results[0].person.should.equal('3sg');
+      analyzer.getMorphology('merni fog').results[0].tense.should.equal('FUT');
+    });
+  });
 });
-
-/*
-      //console.log( analyzer.getMorphology('segítenék').results);
-      // analyzer.getMorphology('segítenék').results[0].person.should.equal('1sg');
-      // analyzer.getMorphology('segítenék').results[0].tense.should.equal('COND');
-      //console.log(analyzer.getMorphology('segítenétek').results) //.should.equal('2pl');
-      //analyzer.getMorphology('segítenétek').results[3].tense.should.equal('COND');
-      console.log(JSON.stringify(analyzer.getMorphology('fordítanának').results[1]))
-*/
