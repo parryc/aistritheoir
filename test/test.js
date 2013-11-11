@@ -106,6 +106,7 @@ beforeEach(function(){
     "schema": ["back","front"],
     "name": "VERB-PST",
     "markers": ["PST"],
+    "preprocess": {"for":"all","do":"remove ik"},
     "1sg": {
       "form": "+Vm",
       "replacements": {"V": ["a","e"]}
@@ -306,6 +307,16 @@ beforeEach(function(){
     }
   });
 
+  hungarian.marker({
+    "schema": ["back","front"],
+    "name": "Potential",
+    "default":{
+      "assimilation":"remove ik",
+      "form":"+hVt",
+      "replacements":{"V":["a","e"]}
+    }
+  });
+
   hungarian.phraseStructure("S","VERB");
 
   analyzer = new Analyzer(hungarian);
@@ -468,6 +479,15 @@ describe('Conjugations', function(){
   });
 });
 
+describe('Derivational endings and suffixes', function(){
+  describe('for all tenses', function(){
+    it('should insert correctly', function(){
+      hungarian.inflect(jatszik,'1sg','',['Potential']).should.equal('játszhatom');
+      hungarian.inflect(jatszik,'1sg','PST',['Potential']).should.equal('játszhattam');
+    });
+  });
+});
+
 // describe('for each definite verb in the past tense');
 
 describe('Phrase Structure rules', function(){
@@ -477,6 +497,7 @@ describe('Phrase Structure rules', function(){
     });
   });
 });
+
 
 
 //Analyzer

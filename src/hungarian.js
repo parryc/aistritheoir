@@ -23,10 +23,6 @@ Language = (function() {
 
   Language.prototype.markersRaw = {};
 
-  Language.prototype.derivations = {};
-
-  Language.prototype.derivationsRaw = {};
-
   Language.prototype.rules = {};
 
   Language.prototype.word = function(word, pos) {
@@ -62,22 +58,30 @@ Language = (function() {
     return _results;
   };
 
-  Language.prototype.inflect = function(word, form, additional) {
-    var fullInflection, inflection, marker, markerList, _i, _len, _ref;
-    if ((additional != null) && additional !== "") {
-      fullInflection = word.pos + '-' + additional;
+  Language.prototype.inflect = function(word, form, tense, derivations) {
+    var derivation, derivationList, fullInflection, inflection, marker, markerList, _i, _j, _len, _len1, _ref;
+    if ((tense != null) && tense !== "") {
+      fullInflection = word.pos + '-' + tense;
     } else {
       fullInflection = word.pos;
     }
     inflection = this.inflections[fullInflection];
     if (inflection) {
       markerList = [];
+      derivationList = [];
       if (inflection.markers != null) {
         _ref = inflection.markers;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           marker = _ref[_i];
           markerList.push(this.markers[marker]);
         }
+      }
+      if (derivations != null) {
+        for (_j = 0, _len1 = derivations.length; _j < _len1; _j++) {
+          derivation = derivations[_j];
+          derivationList.push(this.markers[derivation]);
+        }
+        markerList = derivationList.concat(markerList);
       }
       return inflection.inflect(word, form, markerList);
     } else {
@@ -88,11 +92,6 @@ Language = (function() {
   Language.prototype.marker = function(marker) {
     this.markersRaw[marker.name] = marker;
     return this.markers[marker.name] = new Marker(marker);
-  };
-
-  Language.prototype.derivation = function(derivation) {
-    this.derivationsRaw[derivation.name] = derivation;
-    return this.derivations[derivation.name] = new Derivation(derivation);
   };
 
   Language.prototype.phraseStructure = function(fromThis, toThis) {
