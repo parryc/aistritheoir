@@ -10,6 +10,7 @@ class Language
 	inflectionsRaw: { } # Used for the analyzer
 	markers: { }
 	markersRaw: { } # Used for the analyzer
+	derivationsRaw: [ ] # Used for the analyzer, to distinguish between tenses and derivational endings
 	rules: { } # Phrase structure rules
 
 	word: (word, pos) -> 
@@ -56,8 +57,10 @@ class Language
 		else
 			console.log("There are no inflections of the type "+word.type)
 
-	marker: (marker) ->
+	marker: (marker, isDerivation) ->
 		@markersRaw[marker.name] = marker
+		if isDerivation
+			@derivationsRaw[marker.order] = marker
 		@markers[marker.name] = new Marker(marker)
 
 

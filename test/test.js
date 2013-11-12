@@ -310,12 +310,13 @@ beforeEach(function(){
   hungarian.marker({
     "schema": ["back","front"],
     "name": "Potential",
+    "order": 0,
     "default":{
       "assimilation":"remove ik",
       "form":"+hVt",
       "replacements":{"V":["a","e"]}
     }
-  });
+  }, true);
 
   hungarian.phraseStructure("S","VERB");
 
@@ -560,6 +561,15 @@ describe('The analyzer', function(){
       analyzer.getMorphology('segíteni fogok').results[0].tense.should.equal('FUT');
       analyzer.getMorphology('merni fog').results[0].person.should.equal('3sg');
       analyzer.getMorphology('merni fog').results[0].tense.should.equal('FUT');
+    });
+  });
+
+  describe('for words with derivational endings', function(){
+    it('it should identify them correctly', function(){
+      console.log(analyzer.getMorphology('játszhatom'));
+      analyzer.getMorphology('játszhatom').results[0].derivations.should.equal('Potential');
+      analyzer.getMorphology('játszhattam').results[0].derivations.should.equal('Potential');
+      anaylzer.getMorphology('játszhattam').results[0].tense.should.equal('PST');
     });
   });
 });

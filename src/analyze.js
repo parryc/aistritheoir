@@ -60,9 +60,9 @@ Analyzer = (function() {
   };
 
   Analyzer.prototype.getMorphology = function(word) {
-    var potentials;
+    var analysis, potentials;
     potentials = this.getPerson(word);
-    return this.getTense(potentials);
+    return analysis = this.getTense(potentials);
   };
 
   Analyzer.prototype.getPerson = function(word) {
@@ -113,7 +113,7 @@ Analyzer = (function() {
   };
 
   Analyzer.prototype.getTense = function(potentials) {
-    var ambiguous, info, mark, marker, potential, potentialRoot, result, resultList, root, rule, seenRoot, tense, _i, _len, _ref;
+    var ambiguous, checkDerivation, derivations, info, mark, marker, potential, potentialRoot, result, resultList, root, rule, seenRoot, tense, _i, _len, _ref;
     result = {};
     resultList = [];
     seenRoot = [];
@@ -141,11 +141,15 @@ Analyzer = (function() {
           } else {
             potentialRoot = root.substring(0, root.length - info.form.length + 1);
           }
+          checkDerivation = this.getDerivationalInformation(potentialRoot);
+          potentialRoot = checkDerivation.root;
+          derivations = checkDerivation.derivations;
           if (__indexOf.call(seenRoot, potentialRoot) < 0 && this.language.inflect(this.language.tempWord(potentialRoot, "VERB"), potential.person, tense) === potential.original) {
             resultList.push({
               'root': potentialRoot,
               'person': potential.person,
-              'tense': tense
+              'tense': tense,
+              'derivations': derivations
             });
             seenRoot.push(potentialRoot);
           }
@@ -164,6 +168,47 @@ Analyzer = (function() {
     return {
       'ambiguous': ambiguous,
       'results': resultList
+    };
+  };
+
+  Analyzer.prototype.getDerivationalInformation = function(root) {
+    var derivation, derivationsList, endingLength, hasMatch, info, match, potentialRoot, re, replacement, replacements, rule, _i, _j, _len, _len1, _ref;
+    derivationsList = [];
+    potentialRoot = root;
+    _ref = this.language.derivationsRaw.reverse();
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      derivation = _ref[_i];
+      for (rule in derivation) {
+        info = derivation[rule];
+        if (!(rule !== 'schema' && rule !== 'name' && rule !== 'order')) {
+          continue;
+        }
+        replacements = this.replace(info, derivation.schema.length);
+        hasMatch = false;
+        endingLength = 0;
+        for (_j = 0, _len1 = replacements.length; _j < _len1; _j++) {
+          replacement = replacements[_j];
+          re = new RegExp(replacement + "$", "gi");
+          match = potentialRoot.match(re);
+          console.log(potentialRoot);
+          console.log(match);
+          if (match != null) {
+            hasMatch = true;
+            endingLength = match[0].length;
+            console.log(match);
+          }
+        }
+        if (hasMatch) {
+          derivationsList.unshift(derivation.name);
+          if (info.assimilation != null) {
+            potentialRoot = this._unassimilate(info.assimilation, potentialRoot);
+          }
+        }
+      }
+    }
+    return {
+      "root": potentialRoot,
+      "derivations": derivationsList
     };
   };
 

@@ -38,7 +38,8 @@ class Analyzer
 
 	getMorphology: (word) ->
 		potentials = @getPerson(word)
-		@getTense(potentials)
+		analysis = @getTense(potentials)
+		# @getDerivationalEndings(analysis)
 
 	getPerson: (word) ->
 		min = 0
@@ -90,18 +91,49 @@ class Analyzer
 					else
 						potentialRoot = root.substring(0,root.length-info.form.length+1)
 
+					checkDerivation = @getDerivationalInformation(potentialRoot)
+					potentialRoot = checkDerivation.root
+					derivations = checkDerivation.derivations
 					if potentialRoot not in seenRoot and @language.inflect(@language.tempWord(potentialRoot, "VERB"), potential.person, tense) is potential.original
-						resultList.push({'root': potentialRoot, 'person': potential.person, 'tense': tense});
+						resultList.push({'root': potentialRoot, 'person': potential.person, 'tense': tense, 'derivations':derivations});
 						seenRoot.push(potentialRoot)
 
 			# Checks for tenses that don't have additional markers (e.g. Hungarian present tense)
 			else if @language.inflect(@language.tempWord(root, "VERB"), potential.person, tense) is potential.original
+				# add derivation checkkkkk
 				resultList.push({'root': potential.root, 'person': potential.person, 'tense': tense});
 
 		if resultList.length > 1
 			ambiguous = true
 
 		return {'ambiguous': ambiguous, 'results': resultList}
+
+	getDerivationalInformation: (root) ->
+		# derivations are ordered (free ordering is todo?)
+		# so step through the list. If the ending fits, then add that derivation to the list
+		derivationsList = []
+		potentialRoot = root
+		for derivation in @language.derivationsRaw.reverse()
+			for rule, info of derivation when rule isnt 'schema' and rule isnt 'name' and rule isnt 'order'
+				replacements = @replace(info,derivation.schema.length)
+				hasMatch = false
+				endingLength = 0
+				# It should only ever match one, since it'll only be valid for one part of the schema
+				for replacement in replacements
+					re = new RegExp(replacement+"$","gi")
+					match = potentialRoot.match(re)
+					console.log(potentialRoot)
+					console.log(match)
+					if match?
+						hasMatch = true
+						endingLength = match[0].length
+						console.log(match)
+				if hasMatch
+					derivationsList.unshift(derivation.name)
+					if info.assimilation?
+						potentialRoot = @_unassimilate(info.assimilation, potentialRoot)
+
+		{"root":potentialRoot, "derivations":derivationsList}
 
 	# use underscore to indicate space 
 	_unassimilate: (rules, word) ->

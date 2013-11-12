@@ -23,6 +23,8 @@ Language = (function() {
 
   Language.prototype.markersRaw = {};
 
+  Language.prototype.derivationsRaw = [];
+
   Language.prototype.rules = {};
 
   Language.prototype.word = function(word, pos) {
@@ -89,8 +91,11 @@ Language = (function() {
     }
   };
 
-  Language.prototype.marker = function(marker) {
+  Language.prototype.marker = function(marker, isDerivation) {
     this.markersRaw[marker.name] = marker;
+    if (isDerivation) {
+      this.derivationsRaw[marker.order] = marker;
+    }
     return this.markers[marker.name] = new Marker(marker);
   };
 
