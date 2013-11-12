@@ -60,9 +60,9 @@ Analyzer = (function() {
   };
 
   Analyzer.prototype.getMorphology = function(word) {
-    var analysis, potentials;
+    var potentials;
     potentials = this.getPerson(word);
-    return analysis = this.getTense(potentials);
+    return this.getTense(potentials);
   };
 
   Analyzer.prototype.getPerson = function(word) {
@@ -144,7 +144,7 @@ Analyzer = (function() {
           checkDerivation = this.getDerivationalInformation(potentialRoot);
           potentialRoot = checkDerivation.root;
           derivations = checkDerivation.derivations;
-          if (__indexOf.call(seenRoot, potentialRoot) < 0 && this.language.inflect(this.language.tempWord(potentialRoot, "VERB"), potential.person, tense) === potential.original) {
+          if (__indexOf.call(seenRoot, potentialRoot) < 0 && this.language.inflect(this.language.tempWord(potentialRoot, "VERB"), potential.person, tense, derivations) === potential.original) {
             resultList.push({
               'root': potentialRoot,
               'person': potential.person,
@@ -154,12 +154,18 @@ Analyzer = (function() {
             seenRoot.push(potentialRoot);
           }
         }
-      } else if (this.language.inflect(this.language.tempWord(root, "VERB"), potential.person, tense) === potential.original) {
-        resultList.push({
-          'root': potential.root,
-          'person': potential.person,
-          'tense': tense
-        });
+      } else {
+        checkDerivation = this.getDerivationalInformation(potential.root);
+        potentialRoot = checkDerivation.root;
+        derivations = checkDerivation.derivations;
+        if (this.language.inflect(this.language.tempWord(potentialRoot, "VERB"), potential.person, tense, derivations) === potential.original) {
+          resultList.push({
+            'root': potentialRoot,
+            'person': potential.person,
+            'tense': tense,
+            'derivations': derivations
+          });
+        }
       }
     }
     if (resultList.length > 1) {
@@ -190,18 +196,15 @@ Analyzer = (function() {
           replacement = replacements[_j];
           re = new RegExp(replacement + "$", "gi");
           match = potentialRoot.match(re);
-          console.log(potentialRoot);
-          console.log(match);
           if (match != null) {
             hasMatch = true;
             endingLength = match[0].length;
-            console.log(match);
           }
         }
         if (hasMatch) {
           derivationsList.unshift(derivation.name);
           if (info.assimilation != null) {
-            potentialRoot = this._unassimilate(info.assimilation, potentialRoot);
+            potentialRoot = this._unassimilate(info.assimilation, potentialRoot.substring(0, potentialRoot.length - endingLength));
           }
         }
       }

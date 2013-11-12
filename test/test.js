@@ -566,10 +566,9 @@ describe('The analyzer', function(){
 
   describe('for words with derivational endings', function(){
     it('it should identify them correctly', function(){
-      console.log(analyzer.getMorphology('játszhatom'));
-      analyzer.getMorphology('játszhatom').results[0].derivations.should.equal('Potential');
-      analyzer.getMorphology('játszhattam').results[0].derivations.should.equal('Potential');
-      anaylzer.getMorphology('játszhattam').results[0].tense.should.equal('PST');
+      analyzer.getMorphology('játszhatom').results[0].derivations[0].should.equal('Potential');
+      analyzer.getMorphology('játszhattam').results[0].derivations[0].should.equal('Potential');
+      analyzer.getMorphology('játszhattam').results[0].tense.should.equal('PST');
     });
   });
 });
