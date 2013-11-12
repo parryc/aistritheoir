@@ -57,9 +57,9 @@ class Analyzer
 						minRoot = potentialRoot
 						potentialEnding = ending
 				if ending.length isnt 0 and minRoot isnt 'superlongsuperlongomfgomfg'
-					results.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection;})
+					results.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection})
 				else
-					uninflected.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection;})
+					uninflected.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection})
 
 		if results.length is 0
 			results = uninflected
@@ -95,7 +95,7 @@ class Analyzer
 					derivations = checkDerivation.derivations
 
 					if potentialRoot not in seenRoot and @language.inflect(@language.tempWord(potentialRoot, "VERB"), potential.person, tense, derivations) is potential.original
-						resultList.push({'root': potentialRoot, 'person': potential.person, 'tense': tense, 'derivations':derivations;});
+						resultList.push({'root': potentialRoot, 'person': potential.person, 'tense': tense, 'derivations':derivations});
 						seenRoot.push(potentialRoot)
 
 			# Checks for tenses that don't have additional markers (e.g. Hungarian present tense)
@@ -104,7 +104,7 @@ class Analyzer
 				potentialRoot = checkDerivation.root
 				derivations = checkDerivation.derivations
 				if @language.inflect(@language.tempWord(potentialRoot, "VERB"), potential.person, tense, derivations) is potential.original
-					resultList.push({'root': potentialRoot, 'person': potential.person, 'tense': tense, 'derivations':derivations;});
+					resultList.push({'root': potentialRoot, 'person': potential.person, 'tense': tense, 'derivations':derivations});
 
 		if resultList.length > 1
 			ambiguous = true
@@ -135,7 +135,7 @@ class Analyzer
 					if info.assimilation?
 						potentialRoot = @_unassimilate(info.assimilation, potentialRoot)
 
-		{"root":potentialRoot, "derivations":derivationsList;}
+		{"root":potentialRoot, "derivations":derivationsList}
 
 	# use underscore to indicate space 
 	_unassimilate: (rules, word) ->

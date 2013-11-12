@@ -569,6 +569,7 @@ describe('The analyzer', function(){
 
   describe('for the past tense', function(){
     it('should detect the correct number and person for a verbal ending', function(){
+      console.log(analyzer.getMorphology('szeretett'))
       analyzer.getMorphology('tanítottam').results[0].person.should.equal('1sg');
       analyzer.getMorphology('tanítottam').results[0].tense.should.equal('PST');
       analyzer.getMorphology('szeretett').results[1].person.should.equal('3sg');
