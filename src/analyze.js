@@ -203,8 +203,9 @@ Analyzer = (function() {
         }
         if (hasMatch) {
           derivationsList.unshift(derivation.name);
+          potentialRoot = potentialRoot.substring(0, potentialRoot.length - endingLength);
           if (info.assimilation != null) {
-            potentialRoot = this._unassimilate(info.assimilation, potentialRoot.substring(0, potentialRoot.length - endingLength));
+            potentialRoot = this._unassimilate(info.assimilation, potentialRoot);
           }
         }
       }

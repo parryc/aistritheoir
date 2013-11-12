@@ -240,6 +240,15 @@ class Inflection
 
 		# Parse all the language features!
 
+		# only (X)YZ => ^(X)?(Y)(Z)$ 
+
+		restriction = condition.match(/only\s(.*)/i)
+		if restriction?
+			restriction = restriction.pop()
+			optionals = restriction.match(/\([^()]*\)/gi)
+			for option in optionals
+				condition = "^"+restriction.replace(option, option.substring(1,option.length-1)+"?")+"$"
+
 		# after X => (X)$
 		condition = condition.replace(/after(.*)/gi,"($1)$")
 

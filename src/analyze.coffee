@@ -85,6 +85,7 @@ class Analyzer
 				# keep from having duplicate roots appear
 				seenRoot = []
 				for rule, info of marker when rule isnt 'schema' and rule isnt 'name'
+
 					if info.assimilation?
 						potentialRoot = @_unassimilate(info.assimilation,root)
 					else
@@ -92,6 +93,7 @@ class Analyzer
 					checkDerivation = @getDerivationalInformation(potentialRoot)
 					potentialRoot = checkDerivation.root
 					derivations = checkDerivation.derivations
+
 					if potentialRoot not in seenRoot and @language.inflect(@language.tempWord(potentialRoot, "VERB"), potential.person, tense, derivations) is potential.original
 						resultList.push({'root': potentialRoot, 'person': potential.person, 'tense': tense, 'derivations':derivations;});
 						seenRoot.push(potentialRoot)
@@ -129,8 +131,9 @@ class Analyzer
 
 				if hasMatch
 					derivationsList.unshift(derivation.name)
+					potentialRoot = potentialRoot.substring(0,potentialRoot.length-endingLength)
 					if info.assimilation?
-						potentialRoot = @_unassimilate(info.assimilation, potentialRoot.substring(0,potentialRoot.length-endingLength))
+						potentialRoot = @_unassimilate(info.assimilation, potentialRoot)
 
 		{"root":potentialRoot, "derivations":derivationsList;}
 

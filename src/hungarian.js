@@ -342,9 +342,18 @@ Inflection = (function() {
   };
 
   Inflection.prototype._parseCondition = function(condition) {
-    var exceptions;
+    var exceptions, option, optionals, restriction, _i, _len;
     if (this._isDeleter(condition)) {
       return condition + '$';
+    }
+    restriction = condition.match(/only\s(.*)/i);
+    if (restriction != null) {
+      restriction = restriction.pop();
+      optionals = restriction.match(/\([^()]*\)/gi);
+      for (_i = 0, _len = optionals.length; _i < _len; _i++) {
+        option = optionals[_i];
+        condition = "^" + restriction.replace(option, option.substring(1, option.length - 1) + "?") + "$";
+      }
     }
     condition = condition.replace(/after(.*)/gi, "($1)$");
     exceptions = condition.match(/exceptions\[(.*)\]/i);
