@@ -12,6 +12,7 @@ beforeEach(function(){
 
   hungarian.orthography({
     "vowels": {
+      "all": "áóúőűéíaoueiöü",
       "back": "aáoóuú",
       "front": {
         "rounded": "öőüű",
@@ -106,6 +107,7 @@ beforeEach(function(){
     "schema": ["back","front"],
     "name": "VERB-PST",
     "markers": ["PST"],
+    "preprocess": {"for":"all","do":"remove ik"},
     "1sg": {
       "form": "+Vm",
       "replacements": {"V": ["a","e"]}
@@ -306,6 +308,41 @@ beforeEach(function(){
     }
   });
 
+  /*************************
+    Derivational Endings
+   *************************/
+  hungarian.marker({
+    "schema": ["back", "front.unrounded", "front.rounded"],
+    "name": "Frequentive",
+    "order": 0,
+    "only ('consonants')'vowels.all''consonants'":{
+      "form":"+AgBt",
+      "replacements":{
+        "A": ["o","e","ö"],
+        "B": ["a","e","e"]
+      }
+    },
+    "default":{
+      "form":"+gVt",
+      "replacements":{"V":["a","e","e"]}
+    }
+  }, true);
+
+  hungarian.marker({
+    "schema": ["back","front"],
+    "name": "Potential",
+    "order": 1,
+    "default":{
+      "form":"+hVt",
+      "replacements":{"V":["a","e"]}
+    }
+  }, true);
+
+  //The Hungarian causative is not like the English causative, and is rarely used generally - mostly in well established verb pairs.
+  //http://forum.wordreference.com/showthread.php?t=2148708
+  //It also saves me the trouble of trying to figure out how to do syllable structure... 
+
+
   hungarian.phraseStructure("S","VERB");
 
   analyzer = new Analyzer(hungarian);
@@ -468,6 +505,37 @@ describe('Conjugations', function(){
   });
 });
 
+describe('Derivational endings and suffixes', function(){
+  describe('for all tenses', function(){
+    it('should insert the potential marking correctly', function(){
+      hungarian.inflect(jatszik,'1sg','',['Potential']).should.equal('játszhatom');
+      hungarian.inflect(jatszik,'1sg','PST',['Potential']).should.equal('játszhattam');
+    });
+
+    it('should insert the frequentive marking correctly for polysyllabic words', function(){
+      hungarian.inflect(jatszik,'1sg','',['Frequentive']).should.equal('játszgatom');
+      hungarian.inflect(jatszik,'1sg','PST',['Frequentive']).should.equal('játszgattam');
+    });
+
+    before(function(){
+      hungarian.word("mos","VERB");
+      mos = hungarian.words.mos;
+      hungarian.word("néz","VERB");
+      nez = hungarian.words.néz;
+    });
+
+    it('should insert the frequentive marking correctly for monosyllabic', function(){
+      hungarian.inflect(mos,'1sg','',['Frequentive']).should.equal('mosogatok');
+      hungarian.inflect(mos,'1sg','PST',['Frequentive']).should.equal('mosogattam');
+    });
+
+    it('should insert both the frequentive and potential correctly', function(){
+       hungarian.inflect(mos,'1sg','',['Frequentive','Potential']).should.equal('mosogathatok');
+       hungarian.inflect(nez,'1sg','',['Frequentive','Potential']).should.equal('nézegethetek');
+    });
+  });
+});
+
 // describe('for each definite verb in the past tense');
 
 describe('Phrase Structure rules', function(){
@@ -477,6 +545,7 @@ describe('Phrase Structure rules', function(){
     });
   });
 });
+
 
 
 //Analyzer
@@ -500,6 +569,7 @@ describe('The analyzer', function(){
 
   describe('for the past tense', function(){
     it('should detect the correct number and person for a verbal ending', function(){
+      console.log(analyzer.getMorphology('szeretett'))
       analyzer.getMorphology('tanítottam').results[0].person.should.equal('1sg');
       analyzer.getMorphology('tanítottam').results[0].tense.should.equal('PST');
       analyzer.getMorphology('szeretett').results[1].person.should.equal('3sg');
@@ -539,6 +609,30 @@ describe('The analyzer', function(){
       analyzer.getMorphology('segíteni fogok').results[0].tense.should.equal('FUT');
       analyzer.getMorphology('merni fog').results[0].person.should.equal('3sg');
       analyzer.getMorphology('merni fog').results[0].tense.should.equal('FUT');
+    });
+  });
+
+  describe('for words with derivational endings', function(){
+    it('should identify them correctly for the potential ending', function(){
+      analyzer.getMorphology('moshatok').results[0].derivations[0].should.equal('Potential');
+      analyzer.getMorphology('moshattam').results[0].derivations[0].should.equal('Potential');
+      analyzer.getMorphology('moshattam').results[0].tense.should.equal('PST');
+    });
+
+    it('should identify correctly for -ik verbs')
+      // analyzer.getMorphology('játszhatom').results[0].derivations[0].should.equal('Potential');
+      // analyzer.getMorphology('játszhattam').results[0].derivations[0].should.equal('Potential');
+      // analyzer.getMorphology('játszhattam').results[0].tense.should.equal('PST');
+
+    it('should identify them correctly for the frequentive ending', function(){
+      analyzer.getMorphology('mosogatok').results[0].derivations[0].should.equal('Frequentive');
+      analyzer.getMorphology('mosogattam').results[0].derivations[0].should.equal('Frequentive');
+    });
+
+    it('should identify them correctly with both the frequentive and potential ending', function(){
+      // console.log(analyzer.getMorphology('mosogathatok').results[0]);
+      analyzer.getMorphology('mosogathatok').results[0].derivations.join().should.equal('Frequentive,Potential');
+      analyzer.getMorphology('nézegethetek').results[0].derivations.join().should.equal('Frequentive,Potential');
     });
   });
 });

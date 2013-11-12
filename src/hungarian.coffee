@@ -10,8 +10,7 @@ class Language
 	inflectionsRaw: { } # Used for the analyzer
 	markers: { }
 	markersRaw: { } # Used for the analyzer
-	derivations: { }
-	derivationsRaw: { } # Used for the analyzer
+	derivationsRaw: [ ] # Used for the analyzer, to distinguish between tenses and derivational endings
 	rules: { } # Phrase structure rules
 
 	word: (word, pos) -> 
@@ -37,29 +36,33 @@ class Language
 		for key, prop of overwrite
 			newInflection[key] = prop 
 
-	inflect: (word, form, additional) ->
-		if additional? and additional isnt ""
-			fullInflection = word.pos + '-' + additional 
+	inflect: (word, form, tense, derivations) ->
+		if tense? and tense isnt ""
+			fullInflection = word.pos + '-' + tense 
 		else 
 			fullInflection = word.pos
 		
 		inflection = @inflections[fullInflection]
 		if inflection
 			markerList = []
+			derivationList = []
 			if inflection.markers?
 				for marker in inflection.markers
 					markerList.push(@markers[marker])
+			if derivations?
+				for derivation in derivations
+					derivationList.push(@markers[derivation])
+				markerList = derivationList.concat(markerList)
 			inflection.inflect(word, form, markerList)
 		else
 			console.log("There are no inflections of the type "+word.type)
 
-	marker: (marker) ->
+	marker: (marker, isDerivation) ->
 		@markersRaw[marker.name] = marker
+		if isDerivation
+			@derivationsRaw[marker.order] = marker
 		@markers[marker.name] = new Marker(marker)
 
-	derivation: (derivation) ->
-		@derivationsRaw[derivation.name] = derivation
-		@derivations[derivation.name] = new Derivation(derivation)
 
 	phraseStructure: (fromThis, toThis) ->
 		if @rules[fromThis]
@@ -237,6 +240,15 @@ class Inflection
 
 		# Parse all the language features!
 
+		# only (X)YZ => ^(X)?(Y)(Z)$ 
+
+		restriction = condition.match(/only\s(.*)/i)
+		if restriction?
+			restriction = restriction.pop()
+			optionals = restriction.match(/\([^()]*\)/gi)
+			for option in optionals
+				condition = "^"+restriction.replace(option, option.substring(1,option.length-1)+"?")+"$"
+
 		# after X => (X)$
 		condition = condition.replace(/after(.*)/gi,"($1)$")
 
@@ -344,6 +356,7 @@ class Marker extends Inflection
 			withThis = @_assimilate(@conditions[rule].assimilation,ending)+withThis
 
 		return {'replaceThis': replaceThis, 'withThis': withThis;}
+
 
 
 class PhraseStructure
