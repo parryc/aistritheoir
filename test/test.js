@@ -5,7 +5,7 @@ var should = require('chai').should(),
     Word = require('../src/hungarian.js').Word,
     Inflection = require('../src/hungarian.js').Inflection;
 
-beforeEach(function(){
+before(function(){
   hungarian = new Language("hungarian");
 
   hw = hungarian.words;
@@ -37,6 +37,16 @@ beforeEach(function(){
 
   hungarian.word("fordít","VERB");
   fordit = hungarian.words.fordít;
+
+  hungarian.inflection({
+    "word":"van",
+    "VERB":{
+      "1sg,1pl,2pl":"vagy+",
+      "2sg":"vagy",
+      "3sg":"van",
+      "3pl":"van+"
+    }
+  });
 
   hungarian.inflection({
     "schema": ["back","front.unrounded","front.rounded"],
@@ -536,6 +546,20 @@ describe('Derivational endings and suffixes', function(){
   });
 });
 
+describe('Exceptions', function(){
+  describe('for verbs', function(){
+    before(function(){
+      hungarian.word("van","VERB");
+      van = hungarian.words.van;
+    });
+    it('should conjugate correctly when the root is inflected', function(){
+      hungarian.inflect(van, '1sg').should.equal('vagyok');
+    });
+    it('should conjugate correctly when the root is uninflected');
+    it('should add endings to uninflected roots');
+  });
+});
+
 // describe('for each definite verb in the past tense');
 
 describe('Phrase Structure rules', function(){
@@ -548,7 +572,15 @@ describe('Phrase Structure rules', function(){
 
 
 
-//Analyzer
+/*                _                    
+                  | |                   
+  __ _ _ __   __ _| |_   _ _______ _ __ 
+ / _` | '_ \ / _` | | | | |_  / _ \ '__|
+| (_| | | | | (_| | | |_| |/ /  __/ |   
+ \__,_|_| |_|\__,_|_|\__, /___\___|_|   
+                      __/ |             
+                     |___/     
+*/
 describe('The analyzer', function(){
   describe('for the present tense', function(){
     it('should detect the correct number and person for a verbal ending', function(){
@@ -569,7 +601,6 @@ describe('The analyzer', function(){
 
   describe('for the past tense', function(){
     it('should detect the correct number and person for a verbal ending', function(){
-      console.log(analyzer.getMorphology('szeretett'))
       analyzer.getMorphology('tanítottam').results[0].person.should.equal('1sg');
       analyzer.getMorphology('tanítottam').results[0].tense.should.equal('PST');
       analyzer.getMorphology('szeretett').results[1].person.should.equal('3sg');
@@ -630,9 +661,15 @@ describe('The analyzer', function(){
     });
 
     it('should identify them correctly with both the frequentive and potential ending', function(){
-      // console.log(analyzer.getMorphology('mosogathatok').results[0]);
       analyzer.getMorphology('mosogathatok').results[0].derivations.join().should.equal('Frequentive,Potential');
       analyzer.getMorphology('nézegethetek').results[0].derivations.join().should.equal('Frequentive,Potential');
     });
+  });
+
+  describe('for exceptions', function(){
+    it('should analyze correctly when the root is inflected');
+    it('should analyze correctly when the root is uninflected');
+    it('should analyze added derivational endings to inflected roots');
+    it('should analyze added derivational endings to uninflected roots');
   });
 });

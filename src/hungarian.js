@@ -19,6 +19,8 @@ Language = (function() {
 
   Language.prototype.inflectionsRaw = {};
 
+  Language.prototype.inflectionExceptions = {};
+
   Language.prototype.markers = {};
 
   Language.prototype.markersRaw = {};
@@ -42,8 +44,34 @@ Language = (function() {
   };
 
   Language.prototype.inflection = function(inflection) {
-    this.inflectionsRaw[inflection.name] = inflection;
-    return this.inflections[inflection.name] = new Inflection(inflection, false);
+    var group, groups, person, personList, persons, root, tense, verboseRoots, _i, _len;
+    if ((inflection.word != null)) {
+      persons = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
+      for (tense in inflection) {
+        groups = inflection[tense];
+        if (!(tense !== 'word')) {
+          continue;
+        }
+        verboseRoots = {};
+        for (group in groups) {
+          root = inflection[tense][group];
+          if (group === "all") {
+            personList = persons;
+          } else {
+            personList = group.split(',');
+          }
+          for (_i = 0, _len = personList.length; _i < _len; _i++) {
+            person = personList[_i];
+            verboseRoots[person] = root;
+          }
+        }
+        inflection[tense] = verboseRoots;
+      }
+      return this.inflectionExceptions[inflection.word] = inflection;
+    } else {
+      this.inflectionsRaw[inflection.name] = inflection;
+      return this.inflections[inflection.name] = new Inflection(inflection, false);
+    }
   };
 
   Language.prototype.copyInflection = function(inflection, newName, overwrite) {
@@ -61,17 +89,28 @@ Language = (function() {
   };
 
   Language.prototype.inflect = function(word, form, tense, derivations) {
-    var derivation, derivationList, fullInflection, inflection, marker, markerList, _i, _j, _len, _len1, _ref;
+    var derivation, derivationList, exception, fullException, fullInflection, inflection, marker, markerList, potentialException, _i, _j, _len, _len1, _ref;
+    exception = false;
+    fullException = false;
     if ((tense != null) && tense !== "") {
       fullInflection = word.pos + '-' + tense;
     } else {
       fullInflection = word.pos;
     }
     inflection = this.inflections[fullInflection];
+    potentialException = this.inflectionExceptions[word.lemma];
+    if (potentialException != null) {
+      word = this.tempWord(potentialException[fullInflection][form], word.pos);
+      if (word.lemma.slice(-1) !== '+') {
+        word.exception = true;
+      } else {
+        word.lemma = word.lemma.replace("+", "");
+      }
+    }
     if (inflection) {
       markerList = [];
       derivationList = [];
-      if (inflection.markers != null) {
+      if ((inflection.markers != null) && !word.exception) {
         _ref = inflection.markers;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           marker = _ref[_i];
@@ -311,8 +350,10 @@ Inflection = (function() {
         root = root.replace(markData.replaceThis, markData.withThis);
       }
     }
-    inflection = this[form][inflector](word);
-    root = this._combine(root, inflection);
+    if (!word.exception) {
+      inflection = this[form][inflector](word);
+      root = this._combine(root, inflection);
+    }
     if (this.coverb != null) {
       root = this._combine(root, this.coverb);
     }

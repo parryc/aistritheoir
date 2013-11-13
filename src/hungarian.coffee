@@ -8,6 +8,7 @@ class Language
 	words: { }
 	inflections: { }
 	inflectionsRaw: { } # Used for the analyzer
+	inflectionExceptions: { } # Stores exceptions 
 	markers: { }
 	markersRaw: { } # Used for the analyzer
 	derivationsRaw: [ ] # Used for the analyzer, to distinguish between tenses and derivational endings
@@ -16,7 +17,7 @@ class Language
 	word: (word, pos) -> 
 		@words[word] = new Word(word, pos, @orthographies[@defaultOrthography])
 	
-	# Used with analyzer
+	# Used with analyzer and exceptions
 	tempWord: (word, pos) ->
 		new Word(word, pos, @orthographies[@defaultOrthography])
 	
@@ -25,8 +26,24 @@ class Language
 		@orthographies[id] = new Orthography(id, orthography)
 
 	inflection: (inflection) ->
-		@inflectionsRaw[inflection.name] = inflection
-		@inflections[inflection.name] = new Inflection(inflection, false)
+		# ! It's an exception!
+		if(inflection.word?)
+			persons = ['1sg','2sg','3sg','1pl','2pl','3pl']
+			for tense, groups of inflection when tense isnt 'word'
+				verboseRoots = {}
+				for group of groups
+					root = inflection[tense][group]
+					if group is "all"
+						personList = persons
+					else
+						personList = group.split(',')
+					for person in personList
+						verboseRoots[person] = root
+				inflection[tense] = verboseRoots
+			@inflectionExceptions[inflection.word] = inflection
+		else
+			@inflectionsRaw[inflection.name] = inflection
+			@inflections[inflection.name] = new Inflection(inflection, false)
 
 	copyInflection: (inflection, newName, overwrite) ->
 		@inflections[newName] = {}
@@ -37,16 +54,28 @@ class Language
 			newInflection[key] = prop 
 
 	inflect: (word, form, tense, derivations) ->
+		exception = false
+		fullException = false # e.g. doesn't need anymore person/tense marking
 		if tense? and tense isnt ""
 			fullInflection = word.pos + '-' + tense 
 		else 
 			fullInflection = word.pos
 		
 		inflection = @inflections[fullInflection]
+		potentialException = @inflectionExceptions[word.lemma]
+		if potentialException?
+			# Only mark non-inflecting changed roots. For all intents and purposes, changed roots are just normal lemmas
+			word = @tempWord(potentialException[fullInflection][form],word.pos)
+			if word.lemma.slice(-1) isnt '+'
+				word.exception = true 
+			else
+				word.lemma = word.lemma.replace("+","")
+
+			# Check if full inflection or just modified root
 		if inflection
 			markerList = []
 			derivationList = []
-			if inflection.markers?
+			if inflection.markers? and not word.exception
 				for marker in inflection.markers
 					markerList.push(@markers[marker])
 			if derivations?
@@ -205,9 +234,9 @@ class Inflection
 			else
 				root = root.replace(markData.replaceThis, markData.withThis)
 			
-
-		inflection = @[form][inflector](word)
-		root = @_combine(root, inflection)
+		if not word.exception
+			inflection = @[form][inflector](word)
+			root = @_combine(root, inflection)
 		if @.coverb?
 			root = @_combine(root,@.coverb)
 		return root

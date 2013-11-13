@@ -181,7 +181,7 @@ Analyzer = (function() {
     var derivation, derivationsList, endingLength, hasMatch, info, match, potentialRoot, re, replacement, replacements, rule, _i, _j, _len, _len1, _ref;
     derivationsList = [];
     potentialRoot = root;
-    _ref = this.language.derivationsRaw.reverse();
+    _ref = this.language.derivationsRaw.slice(0).reverse();
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       derivation = _ref[_i];
       for (rule in derivation) {

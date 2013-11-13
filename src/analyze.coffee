@@ -85,7 +85,7 @@ class Analyzer
 				# keep from having duplicate roots appear
 				seenRoot = []
 				for rule, info of marker when rule isnt 'schema' and rule isnt 'name'
-
+					
 					if info.assimilation?
 						potentialRoot = @_unassimilate(info.assimilation,root)
 					else
@@ -116,7 +116,9 @@ class Analyzer
 		# so step through the list. If the ending fits, then add that derivation to the list
 		derivationsList = []
 		potentialRoot = root
-		for derivation in @language.derivationsRaw.reverse()
+
+		# reverse mutates - copy the array so it's always the same order for subsequent loops
+		for derivation in @language.derivationsRaw.slice(0).reverse()
 			for rule, info of derivation when rule isnt 'schema' and rule isnt 'name' and rule isnt 'order'
 				replacements = @replace(info,derivation.schema.length)
 				hasMatch = false
@@ -128,7 +130,6 @@ class Analyzer
 					if match?
 						hasMatch = true
 						endingLength = match[0].length
-
 				if hasMatch
 					derivationsList.unshift(derivation.name)
 					potentialRoot = potentialRoot.substring(0,potentialRoot.length-endingLength)
