@@ -113,7 +113,7 @@ Analyzer = (function() {
   };
 
   Analyzer.prototype.getTense = function(potentials) {
-    var ambiguous, checkDerivation, derivations, info, mark, marker, potential, potentialRoot, result, resultList, root, rule, seenRoot, tense, _i, _len, _ref;
+    var ambiguous, checkDerivation, derivations, info, mark, marker, potential, potentialRoot, realRoot, result, resultList, root, rule, seenRoot, tense, _i, _j, _len, _len1, _ref;
     result = {};
     resultList = [];
     seenRoot = [];
@@ -170,6 +170,13 @@ Analyzer = (function() {
     }
     if (resultList.length > 1) {
       ambiguous = true;
+    }
+    for (_j = 0, _len1 = resultList.length; _j < _len1; _j++) {
+      result = resultList[_j];
+      realRoot = this.language.exceptionMap[result.root];
+      if (realRoot != null) {
+        result.root = realRoot;
+      }
     }
     return {
       'ambiguous': ambiguous,

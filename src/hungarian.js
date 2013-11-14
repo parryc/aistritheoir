@@ -21,6 +21,8 @@ Language = (function() {
 
   Language.prototype.inflectionExceptions = {};
 
+  Language.prototype.exceptionMap = {};
+
   Language.prototype.markers = {};
 
   Language.prototype.markersRaw = {};
@@ -55,6 +57,7 @@ Language = (function() {
         verboseRoots = {};
         for (group in groups) {
           root = inflection[tense][group];
+          this.exceptionMap[root] = inflection.word;
           if (group === "all") {
             personList = persons;
           } else {

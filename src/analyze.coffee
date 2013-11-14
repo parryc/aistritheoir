@@ -109,6 +109,13 @@ class Analyzer
 		if resultList.length > 1
 			ambiguous = true
 
+		# Look for exceptions among the resultList.  They may be tagged with the wrong person and tense
+		for result in resultList
+			realRoot = @language.exceptionMap[result.root]
+			if realRoot?
+				result.root = realRoot
+
+
 		return {'ambiguous': ambiguous, 'results': resultList;}
 
 	getDerivationalInformation: (root) ->

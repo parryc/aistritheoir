@@ -555,8 +555,13 @@ describe('Exceptions', function(){
     it('should conjugate correctly when the root is inflected', function(){
       hungarian.inflect(van, '1sg').should.equal('vagyok');
     });
-    it('should conjugate correctly when the root is uninflected');
-    it('should add endings to uninflected roots');
+    it('should conjugate correctly when the root is uninflected', function(){
+      hungarian.inflect(van, '2sg').should.equal('vagy');
+    });
+    it('should add endings to uninflected roots', function(){
+      // I don't think this actually exists.
+      hungarian.inflect(van, '2sg','',["Potential"]).should.equal('vagyhat');
+    });
   });
 });
 
@@ -667,7 +672,14 @@ describe('The analyzer', function(){
   });
 
   describe('for exceptions', function(){
-    it('should analyze correctly when the root is inflected');
+    it('should analyze correctly when the root is inflected', function(){
+      console.log(analyzer.getMorphology('vagy'))
+      analyzer.getMorphology('vagyok').results[0].root.should.equal('van');
+      analyzer.getMorphology('vagyok').results[0].person.should.equal('1sg');
+      analyzer.getMorphology('vagy').results[0].root.should.equal('van');
+      analyzer.getMorphology('vagy').results[0].person.should.equal('2sg');
+      //analyzer.getMorphology('vannak').results[0].root.should.equal('van');
+    });
     it('should analyze correctly when the root is uninflected');
     it('should analyze added derivational endings to inflected roots');
     it('should analyze added derivational endings to uninflected roots');

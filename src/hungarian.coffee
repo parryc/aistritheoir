@@ -9,6 +9,7 @@ class Language
 	inflections: { }
 	inflectionsRaw: { } # Used for the analyzer
 	inflectionExceptions: { } # Stores exceptions 
+	exceptionMap: { } # Used for the analyzer
 	markers: { }
 	markersRaw: { } # Used for the analyzer
 	derivationsRaw: [ ] # Used for the analyzer, to distinguish between tenses and derivational endings
@@ -26,13 +27,15 @@ class Language
 		@orthographies[id] = new Orthography(id, orthography)
 
 	inflection: (inflection) ->
-		# ! It's an exception!
+		# !!! It's an exception!
 		if(inflection.word?)
 			persons = ['1sg','2sg','3sg','1pl','2pl','3pl']
 			for tense, groups of inflection when tense isnt 'word'
 				verboseRoots = {}
 				for group of groups
 					root = inflection[tense][group]
+					@exceptionMap[root] = inflection.word
+
 					if group is "all"
 						personList = persons
 					else
@@ -40,6 +43,7 @@ class Language
 					for person in personList
 						verboseRoots[person] = root
 				inflection[tense] = verboseRoots
+
 			@inflectionExceptions[inflection.word] = inflection
 		else
 			@inflectionsRaw[inflection.name] = inflection
