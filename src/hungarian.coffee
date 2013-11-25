@@ -34,7 +34,8 @@ class Language
 				verboseRoots = {}
 				for group of groups
 					root = inflection[tense][group]
-					@exceptionMap[root] = inflection.word
+					shortTense = tense.replace(/VERB-?/,"")
+					@exceptionMap[root+'-'+shortTense] = {'root':inflection.word,'tense':shortTense,'person':group}
 
 					if group is "all"
 						personList = persons

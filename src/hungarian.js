@@ -46,7 +46,7 @@ Language = (function() {
   };
 
   Language.prototype.inflection = function(inflection) {
-    var group, groups, person, personList, persons, root, tense, verboseRoots, _i, _len;
+    var group, groups, person, personList, persons, root, shortTense, tense, verboseRoots, _i, _len;
     if ((inflection.word != null)) {
       persons = ['1sg', '2sg', '3sg', '1pl', '2pl', '3pl'];
       for (tense in inflection) {
@@ -57,7 +57,12 @@ Language = (function() {
         verboseRoots = {};
         for (group in groups) {
           root = inflection[tense][group];
-          this.exceptionMap[root] = inflection.word;
+          shortTense = tense.replace(/VERB-?/, "");
+          this.exceptionMap[root + '-' + shortTense] = {
+            'root': inflection.word,
+            'tense': shortTense,
+            'person': group
+          };
           if (group === "all") {
             personList = persons;
           } else {

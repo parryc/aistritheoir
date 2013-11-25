@@ -94,14 +94,16 @@ Analyzer = (function() {
             'original': word,
             'person': person,
             'root': minRoot,
-            'inflection': inflection
+            'inflection': inflection,
+            'hasMarkedInflection': true
           });
         } else {
           uninflected.push({
             'original': word,
             'person': person,
             'root': minRoot,
-            'inflection': inflection
+            'inflection': inflection,
+            'hasMarkedInflection': false
           });
         }
       }
@@ -113,11 +115,12 @@ Analyzer = (function() {
   };
 
   Analyzer.prototype.getTense = function(potentials) {
-    var ambiguous, checkDerivation, derivations, info, mark, marker, potential, potentialRoot, realRoot, result, resultList, root, rule, seenRoot, tense, _i, _j, _len, _len1, _ref;
+    var ambiguous, checkDerivation, derivations, exception, hasException, info, mark, marker, potential, result, resultList, root, rule, seenPairs, tense, _i, _len, _ref, _ref1, _ref2;
     result = {};
     resultList = [];
-    seenRoot = [];
+    seenPairs = [];
     ambiguous = false;
+    hasException = false;
     for (_i = 0, _len = potentials.length; _i < _len; _i++) {
       potential = potentials[_i];
       tense = potential.inflection.split('-').pop();
@@ -130,53 +133,60 @@ Analyzer = (function() {
       marker = this.markers[mark];
       root = potential.root;
       if (marker != null) {
-        seenRoot = [];
         for (rule in marker) {
           info = marker[rule];
           if (!(rule !== 'schema' && rule !== 'name')) {
             continue;
           }
           if (info.assimilation != null) {
-            potentialRoot = this._unassimilate(info.assimilation, root);
+            potential.root = this._unassimilate(info.assimilation, root);
           } else {
-            potentialRoot = root.substring(0, root.length - info.form.length + 1);
+            potential.root = root.substring(0, root.length - info.form.length + 1);
           }
-          checkDerivation = this.getDerivationalInformation(potentialRoot);
-          potentialRoot = checkDerivation.root;
+          exception = this._getException(potential, tense);
+          if (exception.valid) {
+            potential = exception;
+            tense = exception.tense;
+            hasException = true;
+          }
+          checkDerivation = this.getDerivationalInformation(potential.root);
+          potential.root = checkDerivation.root;
           derivations = checkDerivation.derivations;
-          if (__indexOf.call(seenRoot, potentialRoot) < 0 && this.language.inflect(this.language.tempWord(potentialRoot, "VERB"), potential.person, tense, derivations) === potential.original) {
+          if ((_ref1 = potential.root + "-" + tense, __indexOf.call(seenPairs, _ref1) < 0) && this.language.inflect(this.language.tempWord(potential.root, "VERB"), potential.person, tense, derivations) === potential.original) {
             resultList.push({
-              'root': potentialRoot,
+              'root': potential.root,
               'person': potential.person,
               'tense': tense,
-              'derivations': derivations
+              'derivations': derivations,
+              'exception': false
             });
-            seenRoot.push(potentialRoot);
+            seenPairs.push(potential.root + "-" + tense);
           }
         }
       } else {
+        exception = this._getException(potential, tense);
+        if (exception.valid) {
+          potential = exception;
+          tense = exception.tense;
+          hasException = true;
+        }
         checkDerivation = this.getDerivationalInformation(potential.root);
-        potentialRoot = checkDerivation.root;
+        potential.root = checkDerivation.root;
         derivations = checkDerivation.derivations;
-        if (this.language.inflect(this.language.tempWord(potentialRoot, "VERB"), potential.person, tense, derivations) === potential.original) {
+        if ((_ref2 = potential.root + "-" + tense, __indexOf.call(seenPairs, _ref2) < 0) && this.language.inflect(this.language.tempWord(potential.root, "VERB"), potential.person, tense, derivations) === potential.original) {
           resultList.push({
-            'root': potentialRoot,
+            'root': potential.root,
             'person': potential.person,
             'tense': tense,
-            'derivations': derivations
+            'derivations': derivations,
+            'exception': hasException
           });
+          seenPairs.push(potential.root + "-" + tense);
         }
       }
     }
     if (resultList.length > 1) {
       ambiguous = true;
-    }
-    for (_j = 0, _len1 = resultList.length; _j < _len1; _j++) {
-      result = resultList[_j];
-      realRoot = this.language.exceptionMap[result.root];
-      if (realRoot != null) {
-        result.root = realRoot;
-      }
     }
     return {
       'ambiguous': ambiguous,
@@ -242,6 +252,26 @@ Analyzer = (function() {
       }
     }
     return word.replace(/\s/gi, "").replace(/_/gi, " ");
+  };
+
+  Analyzer.prototype._getException = function(potential, tense) {
+    var exception;
+    if (this.language.exceptionMap[potential.original + '-' + tense] != null) {
+      potential.root = potential.original;
+    }
+    exception = this.language.exceptionMap[potential.root + '-' + tense];
+    if (potential.hasMarkedInflection) {
+      exception = this.language.exceptionMap[potential.root + '+-' + tense];
+    }
+    if (exception != null) {
+      potential.valid = true;
+      potential.root = exception.root;
+      potential.tense = tense;
+      if (!potential.hasMarkedInflection) {
+        potential.person = exception.person;
+      }
+    }
+    return potential;
   };
 
   return Analyzer;

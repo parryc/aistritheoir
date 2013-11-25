@@ -45,6 +45,16 @@ before(function(){
       "2sg":"vagy",
       "3sg":"van",
       "3pl":"van+"
+    },
+    "VERB-PST":{
+      "1sg,3sg,1pl,2pl,3pl":"vol+",
+      "2sg":"voltál"
+    },
+    "VERB-SUBJ":{
+      "1sg,2sg,3sg,1pl,2pl,3pl":"legy+"
+    },
+    "VERB-COND":{
+      "1sg,2sg,3sg,1pl,2pl,3pl":"vol+"
     }
   });
 
@@ -673,14 +683,20 @@ describe('The analyzer', function(){
 
   describe('for exceptions', function(){
     it('should analyze correctly when the root is inflected', function(){
-      console.log(analyzer.getMorphology('vagy'))
       analyzer.getMorphology('vagyok').results[0].root.should.equal('van');
       analyzer.getMorphology('vagyok').results[0].person.should.equal('1sg');
+      analyzer.getMorphology('vannak').results[0].root.should.equal('van');
+      analyzer.getMorphology('vannak').results[0].person.should.equal('3pl');
+      analyzer.getMorphology('voltam').results[0].root.should.equal('van');
+      analyzer.getMorphology('voltam').results[0].tense.should.equal('PST');
+    });
+    it('should analyze correctly when the root is uninflected', function(){
       analyzer.getMorphology('vagy').results[0].root.should.equal('van');
       analyzer.getMorphology('vagy').results[0].person.should.equal('2sg');
-      //analyzer.getMorphology('vannak').results[0].root.should.equal('van');
+      analyzer.getMorphology('voltál').results[1].root.should.equal('van');
+      analyzer.getMorphology('voltál').results[1].tense.should.equal('PST');
+      analyzer.getMorphology('voltál').results[1].person.should.equal('2sg');
     });
-    it('should analyze correctly when the root is uninflected');
     it('should analyze added derivational endings to inflected roots');
     it('should analyze added derivational endings to uninflected roots');
   });

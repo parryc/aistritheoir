@@ -57,9 +57,9 @@ class Analyzer
 						minRoot = potentialRoot
 						potentialEnding = ending
 				if ending.length isnt 0 and minRoot isnt 'superlongsuperlongomfgomfg'
-					results.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection})
+					results.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection, 'hasMarkedInflection':true})
 				else
-					uninflected.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection})
+					uninflected.push({'original': word, 'person':person,'root':minRoot, 'inflection': inflection, 'hasMarkedInflection':false})
 
 		if results.length is 0
 			results = uninflected
@@ -68,10 +68,13 @@ class Analyzer
 	getTense: (potentials) ->
 		result = { }
 		resultList = []
-		seenRoot = []
+		seenPairs = []
 		ambiguous = false
+		hasException = false
+
 		for potential in potentials
 			tense = potential.inflection.split('-').pop()
+
 			if tense is 'VERB'
 				mark = ''
 				tense = ''
@@ -83,40 +86,60 @@ class Analyzer
 			root = potential.root
 			if marker?
 				# keep from having duplicate roots appear
-				seenRoot = []
+				# seenPairs = []
 				for rule, info of marker when rule isnt 'schema' and rule isnt 'name'
 					
 					if info.assimilation?
-						potentialRoot = @_unassimilate(info.assimilation,root)
+						potential.root = @_unassimilate(info.assimilation,root)
 					else
-						potentialRoot = root.substring(0,root.length-info.form.length+1)
-					checkDerivation = @getDerivationalInformation(potentialRoot)
-					potentialRoot = checkDerivation.root
+						potential.root = root.substring(0,root.length-info.form.length+1)
+
+					exception = @_getException(potential, tense)
+					if exception.valid
+						potential = exception
+						tense = exception.tense
+						hasException = true
+
+					checkDerivation = @getDerivationalInformation(potential.root)
+					potential.root = checkDerivation.root
 					derivations = checkDerivation.derivations
 
-					if potentialRoot not in seenRoot and @language.inflect(@language.tempWord(potentialRoot, "VERB"), potential.person, tense, derivations) is potential.original
-						resultList.push({'root': potentialRoot, 'person': potential.person, 'tense': tense, 'derivations':derivations});
-						seenRoot.push(potentialRoot)
+					if potential.root+"-"+tense not in seenPairs and @language.inflect(@language.tempWord(potential.root, "VERB"), potential.person, tense, derivations) is potential.original
+						resultList.push({'root': potential.root, 'person': potential.person, 'tense': tense, 'derivations':derivations, 'exception':false});
+						seenPairs.push(potential.root+"-"+tense)
 
 			# Checks for tenses that don't have additional markers (e.g. Hungarian present tense)
 			else
+
+				exception = @_getException(potential, tense)
+				if exception.valid
+					potential = exception
+					tense = exception.tense
+					hasException = true
+
 				checkDerivation = @getDerivationalInformation(potential.root)
-				potentialRoot = checkDerivation.root
+				potential.root = checkDerivation.root
 				derivations = checkDerivation.derivations
-				if @language.inflect(@language.tempWord(potentialRoot, "VERB"), potential.person, tense, derivations) is potential.original
-					resultList.push({'root': potentialRoot, 'person': potential.person, 'tense': tense, 'derivations':derivations});
+
+				if potential.root+"-"+tense not in seenPairs and @language.inflect(@language.tempWord(potential.root, "VERB"), potential.person, tense, derivations) is potential.original
+					resultList.push(
+						{'root': potential.root, 'person': potential.person, 'tense': tense, 'derivations':derivations, 'exception':hasException }
+					)
+					seenPairs.push(potential.root+"-"+tense)
 
 		if resultList.length > 1
 			ambiguous = true
 
-		# Look for exceptions among the resultList.  They may be tagged with the wrong person and tense
-		for result in resultList
-			realRoot = @language.exceptionMap[result.root]
-			if realRoot?
-				result.root = realRoot
+		# # Look for exceptions among the resultList.  They may be tagged with the wrong person and tense
 
+		# for result in resultList
+		# 	console.log(result)
+			# exception = @language.exceptionMap[result.root]
+			# console.log(@language.exceptionMap)
+			# if exception? and not result.hasException
+			# 	result.root = exception.root
 
-		return {'ambiguous': ambiguous, 'results': resultList;}
+		return {'ambiguous': ambiguous, 'results': resultList}
 
 	getDerivationalInformation: (root) ->
 		# derivations are ordered (free ordering is todo?)
@@ -160,6 +183,26 @@ class Analyzer
 					word = word.replace(end,end.substring(end.length-1))
 
 		return word.replace(/\s/gi,"").replace(/_/gi," ")
+
+	_getException: (potential, tense) ->
+		if @language.exceptionMap[potential.original+'-'+tense]?
+		 	# console.log(@language.exceptionMap[potential.original+'-'+tense])
+		 	potential.root = potential.original
+		# console.log(@language.exceptionMap[potential.original+'-'+tense])
+		exception = @language.exceptionMap[potential.root+'-'+tense]
+		# console.log(exception)
+
+
+		if potential.hasMarkedInflection
+			exception = @language.exceptionMap[potential.root+'+-'+tense]
+
+		if exception?
+			potential.valid = true
+			potential.root = exception.root
+			potential.tense = tense
+			if not potential.hasMarkedInflection
+				potential.person = exception.person
+		return potential
 		
 if typeof module isnt 'undefined' and module.exports?
     exports.Analyzer = Analyzer
