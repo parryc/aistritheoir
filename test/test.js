@@ -697,7 +697,15 @@ describe('The analyzer', function(){
       analyzer.getMorphology('voltál').results[1].tense.should.equal('PST');
       analyzer.getMorphology('voltál').results[1].person.should.equal('2sg');
     });
-    it('should analyze added derivational endings to inflected roots');
-    it('should analyze added derivational endings to uninflected roots');
+    it('should analyze added derivational endings to inflected roots', function(){
+      analyzer.getMorphology('vagyhatok').results[0].root.should.equal('van');
+      analyzer.getMorphology('vagyhatok').results[0].person.should.equal('1sg');
+      analyzer.getMorphology('vagyhatok').results[0].derivations[0].should.equal('Potential');
+    });
+    it('should analyze added derivational endings to uninflected roots', function(){
+      analyzer.getMorphology('vagyhat').results[0].root.should.equal('van');
+      analyzer.getMorphology('vagyhat').results[0].person.should.equal('2sg');
+      analyzer.getMorphology('vagyhat').results[0].derivations[0].should.equal('Potential');
+    });
   });
 });

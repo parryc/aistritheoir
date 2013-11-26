@@ -94,15 +94,15 @@ class Analyzer
 					else
 						potential.root = root.substring(0,root.length-info.form.length+1)
 
+					checkDerivation = @getDerivationalInformation(potential.root)
+					potential.root = checkDerivation.root
+					derivations = checkDerivation.derivations
+
 					exception = @_getException(potential, tense)
 					if exception.valid
 						potential = exception
 						tense = exception.tense
 						hasException = true
-
-					checkDerivation = @getDerivationalInformation(potential.root)
-					potential.root = checkDerivation.root
-					derivations = checkDerivation.derivations
 
 					if potential.root+"-"+tense not in seenPairs and @language.inflect(@language.tempWord(potential.root, "VERB"), potential.person, tense, derivations) is potential.original
 						resultList.push({'root': potential.root, 'person': potential.person, 'tense': tense, 'derivations':derivations, 'exception':false});
@@ -110,16 +110,15 @@ class Analyzer
 
 			# Checks for tenses that don't have additional markers (e.g. Hungarian present tense)
 			else
+				checkDerivation = @getDerivationalInformation(potential.root)
+				potential.root = checkDerivation.root
+				derivations = checkDerivation.derivations
 
 				exception = @_getException(potential, tense)
 				if exception.valid
 					potential = exception
 					tense = exception.tense
 					hasException = true
-
-				checkDerivation = @getDerivationalInformation(potential.root)
-				potential.root = checkDerivation.root
-				derivations = checkDerivation.derivations
 
 				if potential.root+"-"+tense not in seenPairs and @language.inflect(@language.tempWord(potential.root, "VERB"), potential.person, tense, derivations) is potential.original
 					resultList.push(

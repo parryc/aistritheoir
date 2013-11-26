@@ -143,15 +143,15 @@ Analyzer = (function() {
           } else {
             potential.root = root.substring(0, root.length - info.form.length + 1);
           }
+          checkDerivation = this.getDerivationalInformation(potential.root);
+          potential.root = checkDerivation.root;
+          derivations = checkDerivation.derivations;
           exception = this._getException(potential, tense);
           if (exception.valid) {
             potential = exception;
             tense = exception.tense;
             hasException = true;
           }
-          checkDerivation = this.getDerivationalInformation(potential.root);
-          potential.root = checkDerivation.root;
-          derivations = checkDerivation.derivations;
           if ((_ref1 = potential.root + "-" + tense, __indexOf.call(seenPairs, _ref1) < 0) && this.language.inflect(this.language.tempWord(potential.root, "VERB"), potential.person, tense, derivations) === potential.original) {
             resultList.push({
               'root': potential.root,
@@ -164,15 +164,15 @@ Analyzer = (function() {
           }
         }
       } else {
+        checkDerivation = this.getDerivationalInformation(potential.root);
+        potential.root = checkDerivation.root;
+        derivations = checkDerivation.derivations;
         exception = this._getException(potential, tense);
         if (exception.valid) {
           potential = exception;
           tense = exception.tense;
           hasException = true;
         }
-        checkDerivation = this.getDerivationalInformation(potential.root);
-        potential.root = checkDerivation.root;
-        derivations = checkDerivation.derivations;
         if ((_ref2 = potential.root + "-" + tense, __indexOf.call(seenPairs, _ref2) < 0) && this.language.inflect(this.language.tempWord(potential.root, "VERB"), potential.person, tense, derivations) === potential.original) {
           resultList.push({
             'root': potential.root,
