@@ -167,7 +167,7 @@ before(function(){
       "replacements": {}
     },
     "3sg": {
-      "form": "+n",
+      "form": "+Vn",
       "replacements": {"V": ["o","e","ö"]}
     },
     "1pl": {
