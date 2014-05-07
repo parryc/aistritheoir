@@ -25,6 +25,7 @@ class Language
 	orthography: (orthography) ->
 		id = @defaultOrthography
 		@orthographies[id] = new Orthography(id, orthography)
+		Word::o = @orthographies[id]
 
 	inflection: (inflection) ->
 		# !!! It's an exception!
@@ -142,29 +143,83 @@ class Orthography
 class Word
 	constructor: (@lemma, @pos, orthography) ->
 		@o = orthography
-		@vowel = @getVowelType(@lemma)
+		# @vowel = @getVowelType(@lemma)
+		for attribute, rule of @attributes
+			@[attribute] = @[rule](@lemma)
 
-	count: (letters) ->
-		@_match(letters, false)
+	setup: (rules, attributes, schemaMap) ->
+		Word::schema = schemaMap
+		Word::attributes = attributes
+
+		for name, rule of rules
+			@buildProperty(name, rule)
+
+	# Only supports one function rules
+	# if it starts with a _ it's a built in rule
+	buildProperty: (name, rule) ->
+		parts = rule.split(/of/gi)
+		funct = parts[0].replace(/\s/gi,'')
+		inputs = parts[1].replace(/\s/gi,'').split(/,/gi)
+
+		if inputs.length > 1
+			input = []
+			for part in inputs
+				el = part.split(/:/gi)
+				input.push(
+					@_curry(Word::[el[0]],el[1])
+				)
+
+		else
+			el = part.split(/:/gi)
+			input = @_curry(Word::[el[0]],el[1])
+
+		Word::[name] = @_curry(Word::[funct],input)
+
 
 	has: (letters) ->
-		@_match(letters, true)
+		@_match(letters, true, @lemma)
 
-	_match: (letters, returnBoolean) ->
+	_count: (letters, lemma) ->
+		Word::_match(letters, false, lemma)
+
+	_match: (letters, returnBoolean, lemma) ->
 		re = new RegExp(@o.getRegExp(letters),"gi")
-		match = @lemma.match(re)
+		match = lemma.match(re)
 		if match? then matchCount = match.length else matchCount = 0
 		if returnBoolean then !!matchCount else matchCount
 
+	_max: (array) ->
+		return Math.max(Math,array)
 
-	getVowelType: ->		
-		back = @count("vowels.back")
-		frontR = @count("vowels.front.rounded")
-		frontUR = @count("vowels.front.unrounded")
-		switch Math.max(back,Math.max(frontR,frontUR))
-			when back then "back"
-			when frontR then "front.rounded"
-			when frontUR then "front.unrounded"
+	_labeledMax: (array, lemma) ->
+		max = array[0](lemma)
+		maxIdx = 0
+		for funct, idx in array
+			newCount = funct(lemma)
+			if newCount > max
+				maxIdx = idx
+				max = newCount
+		@schema[maxIdx]
+
+
+	_min: (array) ->
+		return Math.min(Math.array)
+
+	# From the Javascript Collection
+	_curry: (fn) ->
+		args = Array::slice.call(arguments, 1)
+		return ->
+			return fn.apply(@, args.concat(
+				Array::slice.call(arguments,0)
+			))
+	# getVowelType: ->		
+	# 	back = @count("vowels.back")
+	# 	frontR = @count("vowels.front.rounded")
+	# 	frontUR = @count("vowels.front.unrounded")
+	# 	switch Math.max(back,Math.max(frontR,frontUR))
+	# 		when back then "back"
+	# 		when frontR then "front.rounded"
+	# 		when frontUR then "front.unrounded"
 
 class Inflection
 	constructor: (inflection, isException) ->

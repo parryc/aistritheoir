@@ -1,9 +1,9 @@
 var should = require('chai').should(),
     Analyzer = require('../src/analyze.js').Analyzer;
-    Language = require('../src/hungarian.js').Language,
-    Orthography = require('../src/hungarian.js').Orthography,
-    Word = require('../src/hungarian.js').Word,
-    Inflection = require('../src/hungarian.js').Inflection;
+    Language = require('../src/aistritheoir.js').Language,
+    Orthography = require('../src/aistritheoir.js').Orthography,
+    Word = require('../src/aistritheoir.js').Word,
+    Inflection = require('../src/aistritheoir.js').Inflection;
 
 before(function(){
   hungarian = new Language("hungarian");
@@ -25,6 +25,13 @@ before(function(){
     "sibilants": "s(sz)z(dz)",
     "palatals": "jl(ly)n(ny)r"
   });
+
+  // Can't have words before an orthography
+  Word.prototype.setup(
+    {"getVowelType":"_labeledMax of _count:vowels.back,_count:vowels.front.rounded,_count:vowels.front.unrounded"},
+    {"vowel":"getVowelType"},
+    ['back','front.rounded','front.unrounded']
+  )
 
   hungarian.word("ért", "VERB");
   ert = hungarian.words.ért;
